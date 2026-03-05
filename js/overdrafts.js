@@ -1,10 +1,24 @@
 // --- OVERDRAFTS ---
+const OVERDRAFTS_BUILD = '2026-03-05.7';
 
 function getOverdraftStatusClass(status) {
     const normalized = normalizeOverdraftStatus(status);
     if (normalized === OVERDRAFT_STATUS.SETTLED) return 'status-paid';
     if (normalized === OVERDRAFT_STATUS.REJECTED) return 'status-rejected';
     return 'status-pending';
+}
+
+function getOverdraftTotalDue(od) {
+    if (!od) return 0;
+    const totalDue = Number(od.totalDue);
+    if (Number.isFinite(totalDue)) return totalDue;
+
+    const totalRepayment = Number(od.totalRepayment);
+    if (Number.isFinite(totalRepayment)) return totalRepayment;
+
+    const amount = Number(od.amount) || 0;
+    const interest = Number(od.interest) || 0;
+    return amount + interest;
 }
 
 function openIssueOverdraftModal() {
@@ -55,21 +69,49 @@ async function issueOverdraft(event) {
         return;
     }
 
-    const interestAmount = amount * INTEREST_RATE;
-    const totalDue = amount + interestAmount;
+    const rate = Number(INTEREST_RATE);
+    if (!Number.isFinite(rate) || rate < 0) {
+        showToast('Error', `Overdraft config error: invalid INTEREST_RATE (${INTEREST_RATE})`, 'error');
+        return;
+    }
+
+    const interestAmount = Math.round((amount * rate + Number.EPSILON) * 100) / 100;
+    const totalDue = Math.round((amount + interestAmount + Number.EPSILON) * 100) / 100;
+    const totalRepayment = totalDue;
+
+    if (!Number.isFinite(interestAmount) || !Number.isFinite(totalRepayment)) {
+        showToast('Error', 'Failed to compute overdraft totals. Please check amount and settings.', 'error');
+        return;
+    }
 
     try {
-        const response = await databases.createDocument(DB_ID, 'overdrafts', 'unique()', {
+        const createPayload = {
             memberId: memberId,
             memberName: member.name,
             amount: amount,
             interest: interestAmount,
             totalDue: totalDue,
+            totalRepayment: totalRepayment,
             reason: reason,
             status: OVERDRAFT_STATUS.PENDING,
             dateTaken: new Date().toISOString(),
             amountPaid: 0
-        });
+        };
+
+        let response;
+        try {
+            response = await databases.createDocument(DB_ID, 'overdrafts', 'unique()', createPayload);
+        } catch (firstError) {
+            const firstMessage = String(firstError && firstError.message ? firstError.message : '');
+            if (!firstMessage.includes('totalRepayment')) {
+                throw firstError;
+            }
+
+            // Fallback for strict schemas that reject legacy alias fields.
+            const retryPayload = { ...createPayload, totalRepayment: Number(totalRepayment) };
+            delete retryPayload.totalDue;
+            response = await databases.createDocument(DB_ID, 'overdrafts', 'unique()', retryPayload);
+        }
 
         overdraftsData.push({
             id: response.$id,
@@ -78,6 +120,7 @@ async function issueOverdraft(event) {
             amount: amount,
             interest: interestAmount,
             totalDue: totalDue,
+            totalRepayment: totalRepayment,
             reason: reason,
             status: OVERDRAFT_STATUS.PENDING,
             dateTaken: new Date().toISOString(),
@@ -93,7 +136,9 @@ async function issueOverdraft(event) {
         const details = [
             e && e.message ? e.message : 'Unknown error',
             e && e.type ? `type=${e.type}` : '',
-            e && typeof e.code !== 'undefined' ? `code=${e.code}` : ''
+            e && typeof e.code !== 'undefined' ? `code=${e.code}` : '',
+            `build=${OVERDRAFTS_BUILD}`,
+            `repayment=${totalRepayment}`
         ].filter(Boolean).join(' | ');
         showToast('Error', 'Failed to issue overdraft: ' + details, 'error');
     }
@@ -108,10 +153,11 @@ function openRepayOverdraftModal(overdraftId) {
         return;
     }
 
-    const remaining = od.totalDue - (od.amountPaid || 0);
+    const totalDue = getOverdraftTotalDue(od);
+    const remaining = totalDue - (od.amountPaid || 0);
     document.getElementById('repayOverdraftId').value = overdraftId;
     document.getElementById('repayMemberName').textContent = od.memberName;
-    document.getElementById('repayTotalDue').textContent = formatCurrency(od.totalDue);
+    document.getElementById('repayTotalDue').textContent = formatCurrency(totalDue);
     document.getElementById('repayAmountPaid').textContent = formatCurrency(od.amountPaid || 0);
     document.getElementById('repayRemaining').textContent = formatCurrency(remaining);
     document.getElementById('repayAmount').value = '';
@@ -138,7 +184,8 @@ async function repayOverdraft(event) {
         return;
     }
 
-    const remaining = od.totalDue - (od.amountPaid || 0);
+    const totalDue = getOverdraftTotalDue(od);
+    const remaining = totalDue - (od.amountPaid || 0);
 
     if (!repayAmt || repayAmt <= 0) {
         showToast('Error', 'Please enter a valid amount', 'error');
@@ -150,23 +197,27 @@ async function repayOverdraft(event) {
     }
 
     const newPaid = (od.amountPaid || 0) + repayAmt;
-    const newStatus = newPaid >= od.totalDue
+    const newStatus = newPaid >= totalDue
         ? OVERDRAFT_STATUS.SETTLED
         : OVERDRAFT_STATUS.APPROVED;
 
     try {
         await databases.updateDocument(DB_ID, 'overdrafts', odId, {
+            totalDue: totalDue,
+            totalRepayment: totalDue,
             amountPaid: newPaid,
             status: newStatus
         });
 
+        od.totalDue = totalDue;
+        od.totalRepayment = totalDue;
         od.amountPaid = newPaid;
         od.status = newStatus;
 
         showToast('Success', `Payment of ${formatCurrency(repayAmt)} recorded`, 'success');
         addToAuditLog(
             'Repay Overdraft',
-            `${od.memberName}: Paid ${formatCurrency(repayAmt)}. ${newStatus === OVERDRAFT_STATUS.SETTLED ? 'FULLY REPAID' : `Remaining: ${formatCurrency(od.totalDue - newPaid)}`}`
+            `${od.memberName}: Paid ${formatCurrency(repayAmt)}. ${newStatus === OVERDRAFT_STATUS.SETTLED ? 'FULLY REPAID' : `Remaining: ${formatCurrency(totalDue - newPaid)}`}`
         );
         renderOverdraftsTable();
         closeRepayOverdraftModal();
@@ -230,8 +281,9 @@ function renderOverdraftsTable() {
 
     filteredData.forEach(od => {
         const row = document.createElement('tr');
-        const remaining = od.totalDue - (od.amountPaid || 0);
-        const progress = od.totalDue > 0 ? ((od.amountPaid || 0) / od.totalDue * 100).toFixed(0) : 0;
+        const totalDue = getOverdraftTotalDue(od);
+        const remaining = totalDue - (od.amountPaid || 0);
+        const progress = totalDue > 0 ? ((od.amountPaid || 0) / totalDue * 100).toFixed(0) : 0;
         const dateTaken = new Date(od.dateTaken);
         const isMgr = isManager();
         const statusText = formatOverdraftStatus(od.status);
@@ -242,7 +294,7 @@ function renderOverdraftsTable() {
             <td data-label="Member" class="font-bold">${escapeHtml(od.memberName)}</td>
             <td data-label="Amount" class="amount-cell">${formatCurrency(od.amount)}</td>
             <td data-label="Interest" class="amount-cell text-warning">${formatCurrency(od.interest)}</td>
-            <td data-label="Total Due" class="amount-cell font-extra-bold">${formatCurrency(od.totalDue)}</td>
+            <td data-label="Total Due" class="amount-cell font-extra-bold">${formatCurrency(totalDue)}</td>
             <td data-label="Paid" class="amount-cell text-success">${formatCurrency(od.amountPaid || 0)}</td>
             <td data-label="Date" class="text-sm">${dateTaken.toLocaleDateString()}</td>
             <td data-label="Status">

@@ -1,5 +1,5 @@
 ﻿// --- APP INITIALIZATION & DATA LOADING ---
-const APP_BUILD = '2026-03-05.5';
+const APP_BUILD = '2026-03-05.7';
 
 async function initializeData() {
     setFavicon();
@@ -129,18 +129,26 @@ async function loadYearData(year, silent = false) {
 
         // Load overdrafts
         const odDocs = await fetchAllDocuments('overdrafts');
-        overdraftsData = odDocs.map(doc => ({
-            id: doc.$id,
-            memberId: doc.memberId,
-            memberName: doc.memberName,
-            amount: doc.amount,
-            interest: doc.interest,
-            totalDue: doc.totalDue,
-            reason: doc.reason || 'N/A',
-            status: normalizeOverdraftStatus(doc.status),
-            dateTaken: doc.dateTaken,
-            amountPaid: doc.amountPaid || 0
-        }));
+        overdraftsData = odDocs.map(doc => {
+            const totalDue = Number.isFinite(Number(doc.totalDue))
+                ? Number(doc.totalDue)
+                : (Number.isFinite(Number(doc.totalRepayment))
+                    ? Number(doc.totalRepayment)
+                    : ((Number(doc.amount) || 0) + (Number(doc.interest) || 0)));
+            return {
+                id: doc.$id,
+                memberId: doc.memberId,
+                memberName: doc.memberName,
+                amount: doc.amount,
+                interest: doc.interest,
+                totalDue: totalDue,
+                totalRepayment: totalDue,
+                reason: doc.reason || 'N/A',
+                status: normalizeOverdraftStatus(doc.status),
+                dateTaken: doc.dateTaken,
+                amountPaid: doc.amountPaid || 0
+            };
+        });
 
     } catch (error) {
         console.error('Error loading data:', error);
@@ -239,4 +247,6 @@ function bootstrap() {
 
 // Run on load
 bootstrap();
+
+
 

@@ -188,13 +188,18 @@ async function restoreBackupDataToDatabase(rawData) {
 
         const restoredMember = restoredMembers.find(m => m.id === targetMemberId);
         const memberName = restoredMember ? restoredMember.name : (backupOverdraft.memberName || 'Unknown Member');
+        const totalDue = sanitizeMoney(
+            backupOverdraft.totalDue,
+            sanitizeMoney(backupOverdraft.totalRepayment, 0)
+        );
 
         await databases.createDocument(DB_ID, 'overdrafts', 'unique()', {
             memberId: targetMemberId,
             memberName: memberName,
             amount: sanitizeMoney(backupOverdraft.amount, 0),
             interest: sanitizeMoney(backupOverdraft.interest, 0),
-            totalDue: sanitizeMoney(backupOverdraft.totalDue, 0),
+            totalDue: totalDue,
+            totalRepayment: totalDue,
             reason: backupOverdraft.reason || 'N/A',
             status: normalizeOverdraftStatus(backupOverdraft.status || OVERDRAFT_STATUS.APPROVED),
             dateTaken: backupOverdraft.dateTaken || new Date().toISOString(),
