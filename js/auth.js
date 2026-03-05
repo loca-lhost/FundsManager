@@ -118,6 +118,13 @@ async function handleAuthenticatedUser(user) {
     loadYearData(currentYear);
     renderRecentActivity();
     setupRealtime();
+
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    if (activeTabBtn && activeTabBtn.id.startsWith('tab-')) {
+        switchTab(activeTabBtn.id.replace('tab-', ''));
+    } else {
+        switchTab('contributions');
+    }
 }
 
 function showLoginScreen() {

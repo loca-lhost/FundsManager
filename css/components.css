@@ -597,6 +597,11 @@ tbody tr:nth-child(even) td:first-child {
     color: var(--brand-success);
 }
 
+.status-pending {
+    background: rgba(250, 173, 20, 0.18);
+    color: #8a5700;
+}
+
 /* ---- Floating Action Button ---- */
 .fab-container {
     position: fixed;
@@ -723,10 +728,20 @@ tbody tr:nth-child(even) td:first-child {
 }
 
 /* ---- Toast Notifications ---- */
-.toast {
+.toast-container {
     position: fixed;
-    top: 2rem;
-    right: 2rem;
+    top: calc(1rem + env(safe-area-inset-top));
+    right: 1rem;
+    width: min(420px, calc(100vw - 2rem));
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    z-index: var(--z-toast);
+    pointer-events: none;
+}
+
+.toast {
+    position: relative;
     background: white;
     padding: 0.75rem 1.25rem;
     border-radius: var(--radius-md);
@@ -734,9 +749,9 @@ tbody tr:nth-child(even) td:first-child {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    z-index: var(--z-toast);
     animation: toastSlideIn 0.3s ease;
-    max-width: 400px;
+    width: 100%;
+    pointer-events: auto;
 }
 
 @keyframes toastSlideIn {
@@ -761,6 +776,26 @@ tbody tr:nth-child(even) td:first-child {
 
 .toast.warning {
     border-left: 4px solid var(--brand-warning);
+}
+
+.toast.info {
+    border-left: 4px solid var(--brand-blue);
+}
+
+.toast.toast-success {
+    border-left: 4px solid var(--brand-success);
+}
+
+.toast.toast-error {
+    border-left: 4px solid var(--brand-error);
+}
+
+.toast.toast-warning {
+    border-left: 4px solid var(--brand-warning);
+}
+
+.toast.toast-info {
+    border-left: 4px solid var(--brand-blue);
 }
 
 .toast-icon {
@@ -1078,6 +1113,26 @@ tbody tr:nth-child(even) td:first-child {
     font-size: 1.1rem;
 }
 
+.toast-success .toast-icon-inline,
+.toast.success .toast-icon-inline {
+    color: var(--brand-success);
+}
+
+.toast-error .toast-icon-inline,
+.toast.error .toast-icon-inline {
+    color: var(--brand-error);
+}
+
+.toast-warning .toast-icon-inline,
+.toast.warning .toast-icon-inline {
+    color: var(--brand-warning);
+}
+
+.toast-info .toast-icon-inline,
+.toast.info .toast-icon-inline {
+    color: var(--brand-blue);
+}
+
 .toast-close {
     background: none;
     border: none;
@@ -1090,6 +1145,18 @@ tbody tr:nth-child(even) td:first-child {
 
 .toast-close:hover {
     opacity: 1;
+}
+
+@keyframes toastSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(100px);
+    }
 }
 
 /* Cloud backup list */

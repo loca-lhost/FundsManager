@@ -141,6 +141,8 @@ async function repayOverdraft(event) {
 function renderOverdraftsTable() {
     const tbody = document.getElementById('overdraftsTableBody');
     if (!tbody) return;
+    const searchInput = document.getElementById('searchInput');
+    const searchTerm = (searchInput ? searchInput.value : '').trim().toLowerCase();
 
     tbody.innerHTML = '';
 
@@ -164,7 +166,30 @@ function renderOverdraftsTable() {
         return new Date(b.dateTaken) - new Date(a.dateTaken);
     });
 
-    sortedData.forEach(od => {
+    const filteredData = sortedData.filter(od => {
+        if (!searchTerm) return true;
+
+        const member = String(od.memberName || '').toLowerCase();
+        const reason = String(od.reason || '').toLowerCase();
+        const status = String(od.status || '').toLowerCase();
+        return member.includes(searchTerm) || reason.includes(searchTerm) || status.includes(searchTerm);
+    });
+
+    if (filteredData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-search"></i></div>
+                        <h3>No matching overdrafts found</h3>
+                        <p>Try a different search term.</p>
+                    </div>
+                </td>
+            </tr>`;
+        return;
+    }
+
+    filteredData.forEach(od => {
         const row = document.createElement('tr');
         const remaining = od.totalDue - (od.amountPaid || 0);
         const progress = od.totalDue > 0 ? ((od.amountPaid || 0) / od.totalDue * 100).toFixed(0) : 0;

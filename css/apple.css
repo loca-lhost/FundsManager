@@ -275,6 +275,11 @@ tbody tr:hover td:first-child {
     -webkit-backdrop-filter: blur(12px);
 }
 
+.status-pending {
+    background: rgba(255, 159, 10, 0.18);
+    color: #8a5700;
+}
+
 .login-container {
     background:
         radial-gradient(780px 340px at 50% -20%, rgba(90, 200, 250, 0.2), transparent 72%),

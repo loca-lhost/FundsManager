@@ -471,8 +471,12 @@ function toggleRow(element) {
 
 function renderTable() {
     const tbody = document.getElementById('tableBody');
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const monthFilter = document.getElementById('monthFilter').value;
+    if (!tbody) return;
+
+    const searchInput = document.getElementById('searchInput');
+    const monthFilterSelect = document.getElementById('monthFilter');
+    const searchTerm = (searchInput ? searchInput.value : '').toLowerCase();
+    const monthFilter = monthFilterSelect ? monthFilterSelect.value : '';
 
     tbody.innerHTML = '';
 
@@ -497,7 +501,8 @@ function renderTable() {
 
         const matchesSearch = member.name.toLowerCase().includes(searchTerm) ||
             member.accountNumber.includes(searchTerm);
-        return matchesSearch;
+        const matchesMonth = !monthFilter || (member.contributions[monthFilter] || 0) > 0;
+        return matchesSearch && matchesMonth;
     });
 
     if (statFilter === 'total') {
@@ -514,13 +519,16 @@ function renderTable() {
     }
 
     if (filteredData.length === 0) {
+        const emptyMessage = monthFilter
+            ? `No members found with contributions in ${monthFilter}.`
+            : 'Try adjusting your search terms.';
         tbody.innerHTML = `
             <tr>
                 <td colspan="15">
                     <div class="empty-state">
                         <div class="empty-state-icon"><i class="fas fa-search"></i></div>
                         <h3>No matching members found</h3>
-                        <p>Try adjusting your search terms.</p>
+                        <p>${emptyMessage}</p>
                     </div>
                 </td>
             </tr>`;

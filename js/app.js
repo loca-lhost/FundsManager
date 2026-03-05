@@ -207,7 +207,12 @@ async function createNewYear() {
 function bootstrap() {
     setupDropdownClose();
     setupInactivityListeners();
+    setupToolbarInteractions();
     setupPullToRefresh();
+    switchTab('contributions');
+
+    const footerYear = document.getElementById('footerYear');
+    if (footerYear) footerYear.textContent = new Date().getFullYear();
 
     // Initialize data
     try {

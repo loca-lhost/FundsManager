@@ -1,15 +1,19 @@
 // --- UI HELPERS (Toast, Dropdowns, Tabs, Pull-to-Refresh) ---
 
 function showToast(title, message, type = 'info') {
+    const validTypes = ['info', 'success', 'warning', 'error'];
+    const toastType = validTypes.includes(type) ? type : 'info';
     const container = document.getElementById('toastContainer') || createToastContainer();
 
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    toast.className = `toast ${toastType} toast-${toastType}`;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
 
     let icon = 'fa-info-circle';
-    if (type === 'success') icon = 'fa-check-circle';
-    if (type === 'error') icon = 'fa-exclamation-circle';
-    if (type === 'warning') icon = 'fa-exclamation-triangle';
+    if (toastType === 'success') icon = 'fa-check-circle';
+    if (toastType === 'error') icon = 'fa-exclamation-circle';
+    if (toastType === 'warning') icon = 'fa-exclamation-triangle';
 
     toast.innerHTML = `
         <div class="toast-inner">
@@ -18,9 +22,14 @@ function showToast(title, message, type = 'info') {
                 <div class="font-bold mb-sm">${escapeHtml(title)}</div>
                 <div class="text-sm" style="opacity: 0.9;">${escapeHtml(message)}</div>
             </div>
-            <button onclick="this.parentElement.parentElement.remove()" class="toast-close">&times;</button>
+            <button type="button" class="toast-close" aria-label="Close">&times;</button>
         </div>
     `;
+
+    const closeBtn = toast.querySelector('.toast-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => toast.remove());
+    }
 
     container.appendChild(toast);
 
@@ -43,56 +52,102 @@ function createToastContainer() {
 
 // Tab Switching
 function switchTab(tabName) {
-    // Hide all tab contents
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-        content.style.display = 'none';
+    const sections = {
+        contributions: document.getElementById('contributionsSection'),
+        overdrafts: document.getElementById('overdraftsSection')
+    };
+
+    Object.entries(sections).forEach(([name, section]) => {
+        if (!section) return;
+        section.classList.toggle('hidden', name !== tabName);
     });
 
-    // Deactivate all tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
+        btn.classList.toggle('active', btn.id === `tab-${tabName}`);
     });
 
-    // Show selected tab
-    const tabContent = document.getElementById(`tab-${tabName}`);
-    if (tabContent) {
-        tabContent.style.display = 'block';
-        tabContent.classList.add('active');
-    }
-
-    // Activate button
-    const activeBtn = document.querySelector(`.tab-btn[onclick*="${tabName}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
-
-    // Update bottom nav
     document.querySelectorAll('.bottom-nav-item').forEach(item => {
-        item.classList.remove('active');
+        item.classList.toggle('active', item.id === `bottom-nav-${tabName}`);
     });
-    const activeNav = document.querySelector(`.bottom-nav-item[onclick*="${tabName}"]`);
-    if (activeNav) activeNav.classList.add('active');
+
+    const managerAllowed = typeof isManager === 'function' && isManager();
+    const recordBtn = document.getElementById('btn-record-contribution');
+    const issueBtn = document.getElementById('btn-issue-overdraft');
+    const reportContribBtn = document.getElementById('btnReportContributions');
+    const reportOverdraftBtn = document.getElementById('btnReportOverdrafts');
+
+    if (recordBtn) recordBtn.style.display = managerAllowed && tabName === 'contributions' ? '' : 'none';
+    if (issueBtn) issueBtn.style.display = managerAllowed && tabName === 'overdrafts' ? '' : 'none';
+    if (reportContribBtn) reportContribBtn.style.display = tabName === 'contributions' ? '' : 'none';
+    if (reportOverdraftBtn) reportOverdraftBtn.style.display = tabName === 'overdrafts' ? '' : 'none';
+
+    const searchInput = document.getElementById('searchInput');
+    const yearFilter = document.getElementById('yearFilter');
+    const monthFilter = document.getElementById('monthFilter');
+    if (searchInput) {
+        searchInput.placeholder = tabName === 'overdrafts'
+            ? 'Search member, reason, or status...'
+            : 'Search members or account number...';
+    }
+    if (yearFilter) yearFilter.style.display = tabName === 'contributions' ? '' : 'none';
+    if (monthFilter) monthFilter.style.display = tabName === 'contributions' ? '' : 'none';
+
+    if (tabName === 'overdrafts') {
+        renderOverdraftsTable();
+    } else {
+        renderTable();
+    }
 
     vibrate(25);
 }
 
 // Dropdown functionality
 function toggleDropdown() {
-    document.getElementById("actionsDropdown").classList.toggle("show");
+    const menu = document.getElementById('actionsDropdown');
+    if (menu) menu.classList.toggle('show');
 }
 
 function toggleProfileDropdown() {
-    document.getElementById("profileDropdown").classList.toggle("show");
+    const menu = document.getElementById('profileDropdown');
+    if (menu) menu.classList.toggle('show');
 }
 
 function toggleFab() {
-    document.getElementById("fabContainer").classList.toggle("active");
+    const fab = document.getElementById('fabContainer');
+    if (fab) fab.classList.toggle('active');
+}
+
+function setupToolbarInteractions() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput && !searchInput.dataset.bound) {
+        const debouncedRender = debounce(() => {
+            const activeTab = document.querySelector('.tab-btn.active')?.id?.replace('tab-', '') || 'contributions';
+            if (activeTab === 'overdrafts') {
+                renderOverdraftsTable();
+            } else {
+                renderTable();
+            }
+        }, 180);
+        searchInput.addEventListener('input', debouncedRender);
+        searchInput.dataset.bound = 'true';
+    }
+
+    const monthFilter = document.getElementById('monthFilter');
+    if (monthFilter && !monthFilter.dataset.bound) {
+        monthFilter.addEventListener('change', () => renderTable());
+        monthFilter.dataset.bound = 'true';
+    }
 }
 
 // Pull-to-Refresh
 function setupPullToRefresh() {
-    const ptrElement = document.getElementById('ptr');
-    const ptrIcon = document.getElementById('ptrIcon');
-    if (!ptrElement || !ptrIcon) return;
+    if (setupPullToRefresh.initialized) return;
+
+    const ptrElement = document.getElementById('ptr') || document.getElementById('pullToRefresh');
+    if (!ptrElement) return;
+
+    const ptrIcon = document.getElementById('ptrIcon') || ptrElement.querySelector('.pull-to-refresh-icon i');
+    if (!ptrIcon) return;
 
     let startY = 0;
     let currentY = 0;
@@ -128,8 +183,8 @@ function setupPullToRefresh() {
             setTimeout(function () {
                 refreshTable();
                 resetPullToRefresh();
-                showToast('Success', 'Data refreshed');
-            }, 1000);
+                showToast('Success', 'Data refreshed', 'success');
+            }, 900);
         } else {
             resetPullToRefresh();
         }
@@ -144,32 +199,37 @@ function setupPullToRefresh() {
         ptrElement.classList.remove('refreshing');
         ptrIcon.style.transform = 'rotate(0deg)';
     }
+
+    setupPullToRefresh.initialized = true;
 }
 
 // Close dropdowns when clicking outside
 function setupDropdownClose() {
+    if (setupDropdownClose.initialized) return;
+
     window.addEventListener('click', function (event) {
-        if (!event.target.matches('.dropdown-btn') && !event.target.closest('.dropdown-btn')) {
-            var dropdowns = document.querySelectorAll("#actionsDropdown");
-            for (var i = 0; i < dropdowns.length; i++) {
-                var openDropdown = dropdowns[i];
-                if (openDropdown.classList.contains('show')) {
-                    openDropdown.classList.remove('show');
-                }
-            }
+        const actionsDropdown = document.getElementById('actionsDropdown');
+        if (actionsDropdown && !event.target.closest('.dropdown')) {
+            actionsDropdown.classList.remove('show');
         }
-        if (!event.target.closest('.header-profile')) {
-            var profileDropdown = document.getElementById("profileDropdown");
-            if (profileDropdown && profileDropdown.classList.contains('show')) {
-                profileDropdown.classList.remove('show');
-            }
+
+        const profileDropdown = document.getElementById('profileDropdown');
+        if (profileDropdown && !event.target.closest('.header-profile')) {
+            profileDropdown.classList.remove('show');
         }
     });
+
+    setupDropdownClose.initialized = true;
 }
 
 // Inactivity listeners
 function setupInactivityListeners() {
-    ['mousemove', 'keydown', 'touchstart', 'click'].forEach(event => {
-        document.addEventListener(event, resetInactivityTimer, { passive: true });
+    if (setupInactivityListeners.initialized) return;
+
+    ['mousemove', 'touchstart', 'click'].forEach(eventName => {
+        document.addEventListener(eventName, resetInactivityTimer, { passive: true });
     });
+    document.addEventListener('keydown', resetInactivityTimer);
+
+    setupInactivityListeners.initialized = true;
 }
