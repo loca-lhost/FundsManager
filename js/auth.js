@@ -93,9 +93,18 @@ async function handleAuthenticatedUser(user) {
 
     // Manager-only items
     const isManagerRole = userData.role === 'admin' || userData.role === 'fund_manager';
-    if (document.getElementById('btnAddMember')) document.getElementById('btnAddMember').style.display = isManagerRole ? '' : 'none';
-    if (document.getElementById('btn-record-contribution')) document.getElementById('btn-record-contribution').style.display = isManagerRole ? '' : 'none';
-    if (document.getElementById('btn-issue-overdraft')) document.getElementById('btn-issue-overdraft').style.display = isManagerRole ? '' : 'none';
+    if (document.getElementById('btnAddMember')) {
+        document.getElementById('btnAddMember').classList.remove('hidden');
+        document.getElementById('btnAddMember').style.display = isManagerRole ? '' : 'none';
+    }
+    if (document.getElementById('btn-record-contribution')) {
+        document.getElementById('btn-record-contribution').classList.remove('hidden');
+        document.getElementById('btn-record-contribution').style.display = isManagerRole ? '' : 'none';
+    }
+    if (document.getElementById('btn-issue-overdraft')) {
+        document.getElementById('btn-issue-overdraft').classList.remove('hidden');
+        document.getElementById('btn-issue-overdraft').style.display = isManagerRole ? '' : 'none';
+    }
     if (document.getElementById('fabContainer')) document.getElementById('fabContainer').style.display = isManagerRole ? '' : 'none';
 
     // Hide operational menus

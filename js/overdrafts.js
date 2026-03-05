@@ -6,13 +6,21 @@ function openIssueOverdraftModal() {
         return;
     }
     const select = document.getElementById('odMember');
-    select.innerHTML = '<option value="">Select Member</option>';
-    membersData
+    if (!select) return;
+
+    const activeMembers = membersData
         .filter(m => !m.isArchived)
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .forEach(member => {
-            select.innerHTML += `<option value="${member.id}">${escapeHtml(member.name)}</option>`;
-        });
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (activeMembers.length === 0) {
+        showToast('No Members', 'Add an active member before issuing an overdraft', 'warning');
+        return;
+    }
+
+    select.innerHTML = '<option value="">Select Member</option>';
+    activeMembers.forEach(member => {
+        select.innerHTML += `<option value="${member.id}">${escapeHtml(member.name)}</option>`;
+    });
     document.getElementById('issueOverdraftForm').reset();
     document.getElementById('issueOverdraftModal').classList.add('active');
 }
@@ -35,7 +43,10 @@ async function issueOverdraft(event) {
     }
 
     const member = membersData.find(m => m.id === memberId);
-    if (!member) return;
+    if (!member) {
+        showToast('Error', 'Selected member could not be found. Please reopen the form.', 'error');
+        return;
+    }
 
     const interestAmount = amount * INTEREST_RATE;
     const totalDue = amount + interestAmount;

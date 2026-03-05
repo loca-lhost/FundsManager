@@ -1,4 +1,86 @@
-// --- UI HELPERS (Toast, Dropdowns, Tabs, Pull-to-Refresh) ---
+// --- UI HELPERS (Theme, Toast, Dropdowns, Tabs, Pull-to-Refresh) ---
+
+const THEME_STORAGE_KEY = 'fundsManagerTheme';
+const THEME_LIGHT = 'light';
+const THEME_DARK = 'dark';
+
+function getSystemThemePreference() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? THEME_DARK
+        : THEME_LIGHT;
+}
+
+function getStoredThemePreference() {
+    try {
+        const stored = localStorage.getItem(THEME_STORAGE_KEY);
+        return stored === THEME_DARK || stored === THEME_LIGHT ? stored : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function updateThemeToggleUI(theme) {
+    const icon = document.getElementById('themeToggleIcon');
+    const text = document.getElementById('themeToggleText');
+    const button = document.getElementById('themeToggleBtn');
+
+    if (icon) {
+        icon.className = theme === THEME_DARK ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    if (text) {
+        text.textContent = theme === THEME_DARK ? 'Light Mode' : 'Dark Mode';
+    }
+
+    if (button) {
+        button.setAttribute('aria-label', theme === THEME_DARK ? 'Switch to light mode' : 'Switch to dark mode');
+        button.setAttribute('title', theme === THEME_DARK ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+}
+
+function applyTheme(theme, persist = false) {
+    const nextTheme = theme === THEME_DARK ? THEME_DARK : THEME_LIGHT;
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    document.documentElement.style.colorScheme = nextTheme;
+
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) {
+        themeMeta.setAttribute('content', nextTheme === THEME_DARK ? '#101218' : '#f2f3f7');
+    }
+
+    if (persist) {
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+        } catch (e) {
+            // Ignore storage failures (private mode / storage disabled).
+        }
+    }
+
+    updateThemeToggleUI(nextTheme);
+}
+
+function initializeTheme() {
+    const storedTheme = getStoredThemePreference();
+    const initialTheme = storedTheme || document.documentElement.getAttribute('data-theme') || getSystemThemePreference();
+    applyTheme(initialTheme, false);
+
+    if (!initializeTheme.boundSystemListener && window.matchMedia) {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        media.addEventListener('change', e => {
+            // Respect system changes only when user has not explicitly chosen a theme.
+            if (!getStoredThemePreference()) {
+                applyTheme(e.matches ? THEME_DARK : THEME_LIGHT, false);
+            }
+        });
+        initializeTheme.boundSystemListener = true;
+    }
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') === THEME_DARK ? THEME_DARK : THEME_LIGHT;
+    const next = current === THEME_DARK ? THEME_LIGHT : THEME_DARK;
+    applyTheme(next, true);
+}
 
 function showToast(title, message, type = 'info') {
     const validTypes = ['info', 'success', 'warning', 'error'];
@@ -76,6 +158,8 @@ function switchTab(tabName) {
     const reportContribBtn = document.getElementById('btnReportContributions');
     const reportOverdraftBtn = document.getElementById('btnReportOverdrafts');
 
+    if (recordBtn) recordBtn.classList.remove('hidden');
+    if (issueBtn) issueBtn.classList.remove('hidden');
     if (recordBtn) recordBtn.style.display = managerAllowed && tabName === 'contributions' ? '' : 'none';
     if (issueBtn) issueBtn.style.display = managerAllowed && tabName === 'overdrafts' ? '' : 'none';
     if (reportContribBtn) reportContribBtn.style.display = tabName === 'contributions' ? '' : 'none';

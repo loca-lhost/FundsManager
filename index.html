@@ -10,6 +10,21 @@
     <meta name="theme-color" content="#003087">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script>
+        (() => {
+            try {
+                const key = 'fundsManagerTheme';
+                const saved = localStorage.getItem(key);
+                if (saved === 'dark' || saved === 'light') {
+                    document.documentElement.setAttribute('data-theme', saved);
+                } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {
+                // Ignore storage access failures and fall back to default theme.
+            }
+        })();
+    </script>
 
     <!-- Favicon -->
     <link rel="icon"
@@ -65,12 +80,12 @@
 
     <!-- Initial App Loader -->
     <div id="initialLoader"
-        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--theme-bg-linear-mid); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
         <div class="logo"
             style="width: 80px; height: 80px; font-size: 2.5rem; margin-bottom: 1.5rem; animation: pulse 2s infinite;">
             &#x20B5;</div>
         <div class="spinner" style="width: 40px; height: 40px; border-width: 4px;"></div>
-        <p style="margin-top: 1rem; color: #666; font-family: sans-serif; font-weight: 500;">Initializing Funds
+        <p style="margin-top: 1rem; color: var(--theme-text-secondary); font-family: sans-serif; font-weight: 500;">Initializing Funds
             Manager...</p>
     </div>
 
@@ -100,7 +115,7 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
                         <label
-                            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 1rem; color: #666;">
+                            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 1rem; color: var(--theme-text-secondary);">
                             <input type="checkbox" id="rememberMe"> Remember me
                         </label>
                         <a href="javascript:void(0)" onclick="openForgotPasswordModal()"
@@ -168,14 +183,14 @@
                     <div class="header-profile" onclick="toggleProfileDropdown()">
                         <div class="profile-avatar" id="headerAvatar">U</div>
                         <div class="profile-name" id="headerUsername">User</div>
-                        <i class="fas fa-chevron-down" style="font-size: 0.9rem; color: rgba(255,255,255,0.7);"></i>
+                        <i class="fas fa-chevron-down" style="font-size: 0.9rem; color: var(--theme-text-secondary);"></i>
 
                         <div class="dropdown-content" id="profileDropdown"
                             style="top: 100%; right: 0; margin-top: 0.5rem;">
                             <div class="profile-header">
                                 <div style="font-weight: 700; color: var(--brand-dark);" id="dropdownName">User Name
                                 </div>
-                                <div style="font-size: 0.9rem; color: #666; text-transform: uppercase;"
+                                <div style="font-size: 0.9rem; color: var(--theme-text-secondary); text-transform: uppercase;"
                                     id="dropdownRole">Role</div>
                             </div>
 
@@ -186,6 +201,10 @@
                             </button>
                             <button class="dropdown-item" onclick="openPasswordModal()">
                                 <i class="fas fa-key" style="color: var(--brand-dark)"></i> Change Password
+                            </button>
+                            <button class="dropdown-item" id="themeToggleBtn" onclick="toggleTheme()">
+                                <i class="fas fa-moon" id="themeToggleIcon" style="color: var(--brand-dark)"></i>
+                                <span id="themeToggleText">Dark Mode</span>
                             </button>
 
                             <div class="admin-only">
@@ -259,7 +278,7 @@
                     <button class="btn btn-primary" id="btn-record-contribution" onclick="openBulkContributionModal()">
                         <i class="fas fa-hand-holding-usd"></i> Record Contribution
                     </button>
-                    <button class="btn btn-primary hidden" id="btn-issue-overdraft" onclick="openIssueOverdraftModal()">
+                    <button class="btn btn-primary" id="btn-issue-overdraft" onclick="openIssueOverdraftModal()">
                         <i class="fas fa-hand-holding-water"></i> Issue Overdraft
                     </button>
 
@@ -276,7 +295,7 @@
                                 Dividends
                             </button>
                             <button class="dropdown-item" onclick="toggleArchivedView()">
-                                <i class="fas fa-archive" id="archiveToggleIcon" style="color: #666"></i> <span
+                                <i class="fas fa-archive" id="archiveToggleIcon" style="color: var(--theme-text-secondary)"></i> <span
                                     id="archiveToggleText">Show Archived</span>
                             </button>
                             <div class="dropdown-divider"></div>
@@ -424,7 +443,7 @@
                 <div class="activity-list" id="activityList"></div>
             </div>
 
-            <div style="text-align: center; margin-top: 3rem; padding-bottom: 2rem; color: #999; font-size: 0.85rem;">
+            <div style="text-align: center; margin-top: 3rem; padding-bottom: 2rem; color: var(--theme-text-secondary); font-size: 0.85rem;">
                 &copy; <span id="footerYear"></span> Funds Manager. All rights reserved.
             </div>
         </div>
@@ -691,7 +710,7 @@
                 </button>
             </div>
             <div
-                style="background: #f8fafc; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--brand-border);">
+                style="background: var(--theme-surface-strong); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--theme-surface-border);">
                 <div class="form-row" style="align-items: end; gap: 0.5rem;">
                     <div class="form-group" style="margin-bottom: 0; flex: 2;">
                         <label class="form-label compact-label">Search</label>
@@ -805,7 +824,7 @@
                     <input type="email" class="form-input" id="fpEmail" required inputmode="email"
                         placeholder="Enter your registered email">
                 </div>
-                <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                <p style="color: var(--theme-text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
                     We will send a password recovery link to your email.
                 </p>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Send Recovery Link</button>
@@ -842,7 +861,7 @@
                     onclick="document.getElementById('recoveryCodeModal').classList.remove('active')"><i
                         class="fas fa-times"></i></button>
             </div>
-            <p style="margin-bottom: 1rem; color: #666;">Please save this code in a safe place. You will need it to
+            <p style="margin-bottom: 1rem; color: var(--theme-text-secondary);">Please save this code in a safe place. You will need it to
                 reset your password if you forget it.</p>
             <div id="recoveryCodeDisplay"
                 style="background: var(--brand-gray); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 2px; border: 1px solid var(--brand-border); margin-bottom: 1.5rem; user-select: all;">
@@ -881,13 +900,13 @@
                 <div class="form-group">
                     <label class="form-label">Inactivity Timeout (minutes)</label>
                     <input type="number" class="form-input" id="settingInactivity" required min="1" max="60">
-                    <small style="color: #666; font-size: 0.9rem;">Auto-logout after this many minutes of
+                    <small style="color: var(--theme-text-secondary); font-size: 0.9rem;">Auto-logout after this many minutes of
                         inactivity.</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Audit Log Retention (days)</label>
                     <input type="number" class="form-input" id="settingAuditRetention" required min="1" max="365">
-                    <small style="color: #666; font-size: 0.9rem;">Automatically archive logs older than this.</small>
+                    <small style="color: var(--theme-text-secondary); font-size: 0.9rem;">Automatically archive logs older than this.</small>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Save Settings</button>
             </form>
@@ -904,27 +923,27 @@
                 </button>
             </div>
             <div class="form-group"
-                style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                style="background: var(--theme-surface-strong); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--theme-surface-border);">
                 <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 1rem;">Profit Breakdown</h4>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Overdraft Interest (System)</label>
                         <input type="text" class="form-input" id="systemOverdraftInterest" readonly value="0.00"
-                            style="background-color: #e6f7ff; color: var(--brand-blue); font-weight: 600;">
-                        <small style="color: #666; font-size: 0.8rem;">Total interest from overdrafts recorded this
+                            style="background-color: var(--theme-row-hover); color: var(--brand-blue); font-weight: 600;">
+                        <small style="color: var(--theme-text-secondary); font-size: 0.8rem;">Total interest from overdrafts recorded this
                             year.</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Savings Interest (Bank)</label>
                         <input type="number" class="form-input" id="manualSavingsInterest" placeholder="0.00" min="0"
                             step="0.01" oninput="updateTotalDividend()">
-                        <small style="color: #666; font-size: 0.8rem;">Interest earned from bank savings
+                        <small style="color: var(--theme-text-secondary); font-size: 0.8rem;">Interest earned from bank savings
                             account.</small>
                     </div>
                 </div>
 
                 <div
-                    style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e1e8ed; display: flex; gap: 1rem; align-items: flex-end;">
+                    style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--theme-surface-border); display: flex; gap: 1rem; align-items: flex-end;">
                     <div style="flex: 1;">
                         <label class="form-label">Total Distributable Dividend</label>
                         <input type="text" class="form-input" id="totalInterestInput" readonly value="0.00"
@@ -933,7 +952,7 @@
                     <button class="btn btn-primary" onclick="calculateDividends()" style="height: 46px;">Calculate
                         Distribution</button>
                 </div>
-                <small style="color: #666; display: block; margin-top: 1rem;">Calculation uses the <strong>Time-Weighted
+                <small style="color: var(--theme-text-secondary); display: block; margin-top: 1rem;">Calculation uses the <strong>Time-Weighted
                         Product Method</strong>: Contributions made earlier in the year earn more interest (Jan = 12pts,
                     Dec = 1pt).</small>
             </div>
@@ -1008,21 +1027,21 @@
             </div>
             <form id="repayOverdraftForm" onsubmit="repayOverdraft(event)">
                 <input type="hidden" id="repayOverdraftId">
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                <div style="margin-bottom: 1.5rem; background: var(--theme-surface-strong); padding: 1rem; border-radius: 8px; border: 1px solid var(--theme-surface-border);">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #666;">Member:</span>
+                        <span style="color: var(--theme-text-secondary);">Member:</span>
                         <span style="font-weight: 600;" id="repayMemberName">-</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #666;">Total Due:</span>
+                        <span style="color: var(--theme-text-secondary);">Total Due:</span>
                         <span style="font-weight: 600;" id="repayTotalDue">-</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: #666;">Amount Paid:</span>
+                        <span style="color: var(--theme-text-secondary);">Amount Paid:</span>
                         <span style="font-weight: 600; color: var(--brand-success);" id="repayAmountPaid">-</span>
                     </div>
                     <div
-                        style="display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 0.5rem;">
+                        style="display: flex; justify-content: space-between; border-top: 1px solid var(--theme-surface-border); padding-top: 0.5rem;">
                         <span style="color: var(--brand-dark); font-weight: 600;">Remaining:</span>
                         <span style="font-weight: 700; color: var(--brand-error);" id="repayRemaining">-</span>
                     </div>
@@ -1048,7 +1067,7 @@
             </div>
             <div style="display: grid; gap: 1rem;">
                 <div
-                    style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                    style="background: var(--theme-surface-strong); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--theme-surface-border);">
                     <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
                         <i class="fas fa-cloud-upload-alt"
                             style="color: var(--brand-blue); margin-right: 0.5rem;"></i>Cloud Backup
@@ -1063,9 +1082,9 @@
                     </div>
                 </div>
                 <div
-                    style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                    style="background: var(--theme-surface-strong); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--theme-surface-border);">
                     <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
-                        <i class="fas fa-hdd" style="color: #666; margin-right: 0.5rem;"></i>Local Backup
+                        <i class="fas fa-hdd" style="color: var(--theme-text-secondary); margin-right: 0.5rem;"></i>Local Backup
                     </h4>
                     <div style="display: flex; gap: 0.75rem;">
                         <button class="btn btn-primary" onclick="backupToLocal()" style="flex: 1;">
@@ -1077,7 +1096,7 @@
                     </div>
                 </div>
                 <div
-                    style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                    style="background: var(--theme-surface-strong); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--theme-surface-border);">
                     <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
                         <i class="fas fa-file-excel"
                             style="color: var(--brand-success); margin-right: 0.5rem;"></i>Export / Import

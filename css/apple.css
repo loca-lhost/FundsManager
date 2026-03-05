@@ -1,4 +1,4 @@
-/* Apple-style visual override layer */
+/* Apple-style visual override layer with light/dark themes */
 
 :root {
     --brand-blue: #0a84ff;
@@ -14,19 +14,117 @@
     --brand-error: #ff453a;
     --brand-gold: #ffd60a;
 
+    --theme-text-primary: #1d1d1f;
+    --theme-text-secondary: #6e6e73;
+    --theme-bg-radial-a: rgba(90, 200, 250, 0.16);
+    --theme-bg-radial-b: rgba(10, 132, 255, 0.18);
+    --theme-bg-linear-start: #f7f8fb;
+    --theme-bg-linear-mid: #f2f3f7;
+    --theme-bg-linear-end: #eceef4;
+
+    --theme-header-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(248, 250, 255, 0.7));
+    --theme-header-border: rgba(210, 210, 215, 0.7);
+    --theme-header-shadow: 0 10px 34px rgba(15, 17, 21, 0.08);
+
+    --theme-profile-bg: rgba(255, 255, 255, 0.68);
+    --theme-profile-border: rgba(210, 210, 215, 0.9);
+    --theme-profile-hover: rgba(255, 255, 255, 0.84);
+
+    --theme-surface: rgba(255, 255, 255, 0.86);
+    --theme-surface-strong: rgba(255, 255, 255, 0.92);
+    --theme-surface-border: rgba(210, 210, 215, 0.78);
+
+    --theme-input-bg: rgba(255, 255, 255, 0.9);
+    --theme-input-border: rgba(199, 199, 204, 0.92);
+
+    --theme-table-head-bg: linear-gradient(180deg, #f8f9fd 0%, #edf1f8 100%);
+    --theme-table-head-text: #1d1d1f;
+    --theme-row-even: #fbfcff;
+    --theme-row-hover: rgba(10, 132, 255, 0.08);
+
+    --theme-modal-backdrop: rgba(22, 22, 24, 0.38);
+    --theme-close-color: #5d5d62;
+    --theme-close-hover: rgba(120, 120, 128, 0.12);
+
+    --theme-dropdown-hover: rgba(10, 132, 255, 0.1);
+    --theme-bottom-nav-bg: rgba(255, 255, 255, 0.92);
+    --theme-toast-bg: rgba(255, 255, 255, 0.92);
+    --theme-toast-border: rgba(210, 210, 215, 0.9);
+
+    --theme-login-radial: rgba(90, 200, 250, 0.2);
+    --theme-login-start: #eef2f9;
+    --theme-login-mid: #e8edf6;
+    --theme-login-end: #dfe5ef;
+
     --shadow-sm: 0 4px 18px rgba(28, 28, 30, 0.06);
     --shadow-md: 0 10px 28px rgba(28, 28, 30, 0.08);
     --shadow-lg: 0 18px 46px rgba(28, 28, 30, 0.14);
     --shadow-xl: 0 28px 72px rgba(28, 28, 30, 0.2);
 }
 
+:root[data-theme='dark'] {
+    --brand-dark: #f5f5f7;
+    --brand-white: #191b22;
+    --brand-gray: #13151b;
+    --brand-text: #f5f5f7;
+    --brand-border: #3f4352;
+
+    --theme-text-primary: #f5f5f7;
+    --theme-text-secondary: #a1a1aa;
+    --theme-bg-radial-a: rgba(10, 132, 255, 0.2);
+    --theme-bg-radial-b: rgba(90, 200, 250, 0.14);
+    --theme-bg-linear-start: #0b0c10;
+    --theme-bg-linear-mid: #101218;
+    --theme-bg-linear-end: #151923;
+
+    --theme-header-bg: linear-gradient(160deg, rgba(30, 33, 44, 0.82), rgba(20, 22, 31, 0.78));
+    --theme-header-border: rgba(72, 75, 90, 0.58);
+    --theme-header-shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
+
+    --theme-profile-bg: rgba(42, 45, 56, 0.8);
+    --theme-profile-border: rgba(90, 94, 111, 0.75);
+    --theme-profile-hover: rgba(52, 55, 68, 0.9);
+
+    --theme-surface: rgba(25, 27, 36, 0.86);
+    --theme-surface-strong: rgba(27, 29, 38, 0.94);
+    --theme-surface-border: rgba(75, 79, 95, 0.62);
+
+    --theme-input-bg: rgba(34, 37, 47, 0.9);
+    --theme-input-border: rgba(84, 89, 106, 0.84);
+
+    --theme-table-head-bg: linear-gradient(180deg, #202532 0%, #1a1f2b 100%);
+    --theme-table-head-text: #f5f5f7;
+    --theme-row-even: #1a1d27;
+    --theme-row-hover: rgba(10, 132, 255, 0.2);
+
+    --theme-modal-backdrop: rgba(0, 0, 0, 0.58);
+    --theme-close-color: #d0d0d5;
+    --theme-close-hover: rgba(255, 255, 255, 0.12);
+
+    --theme-dropdown-hover: rgba(10, 132, 255, 0.22);
+    --theme-bottom-nav-bg: rgba(19, 20, 27, 0.9);
+    --theme-toast-bg: rgba(24, 26, 34, 0.94);
+    --theme-toast-border: rgba(82, 84, 96, 0.72);
+
+    --theme-login-radial: rgba(10, 132, 255, 0.18);
+    --theme-login-start: #0f1117;
+    --theme-login-mid: #141824;
+    --theme-login-end: #1a1f2e;
+
+    --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.34);
+    --shadow-lg: 0 22px 52px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 30px 78px rgba(0, 0, 0, 0.5);
+}
+
 body {
     font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     background:
-        radial-gradient(1000px 420px at -8% -10%, rgba(90, 200, 250, 0.16), transparent 70%),
-        radial-gradient(900px 380px at 108% -18%, rgba(10, 132, 255, 0.18), transparent 70%),
-        linear-gradient(180deg, #f7f8fb 0%, #f2f3f7 55%, #eceef4 100%);
-    color: #1d1d1f;
+        radial-gradient(1000px 420px at -8% -10%, var(--theme-bg-radial-a), transparent 70%),
+        radial-gradient(900px 380px at 108% -18%, var(--theme-bg-radial-b), transparent 70%),
+        linear-gradient(180deg, var(--theme-bg-linear-start) 0%, var(--theme-bg-linear-mid) 55%, var(--theme-bg-linear-end) 100%);
+    color: var(--theme-text-primary);
+    transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 button,
@@ -37,16 +135,16 @@ textarea {
 }
 
 .header {
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(248, 250, 255, 0.7));
-    color: #1d1d1f;
-    border-bottom: 1px solid rgba(210, 210, 215, 0.7);
-    box-shadow: 0 10px 34px rgba(15, 17, 21, 0.08);
+    background: var(--theme-header-bg);
+    color: var(--theme-text-primary);
+    border-bottom: 1px solid var(--theme-header-border);
+    box-shadow: var(--theme-header-shadow);
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 
 .header::before {
-    background: linear-gradient(90deg, transparent, rgba(10, 132, 255, 0.08));
+    background: linear-gradient(90deg, transparent, rgba(10, 132, 255, 0.12));
 }
 
 .logo,
@@ -67,18 +165,38 @@ textarea {
 
 .header-title h1,
 .header-title p,
-.profile-name {
-    color: #1d1d1f;
+.profile-name,
+.table-title,
+.widget-title,
+.modal-title,
+.form-label,
+.dropdown-item,
+.dropdown-section-label,
+#dropdownName {
+    color: var(--theme-text-primary);
+}
+
+#dropdownRole,
+.text-muted,
+.text-muted-light,
+.activity-meta,
+.dropdown-section-label,
+.login-header p {
+    color: var(--theme-text-secondary) !important;
 }
 
 .header-profile {
-    background: rgba(255, 255, 255, 0.68);
-    border: 1px solid rgba(210, 210, 215, 0.9);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background: var(--theme-profile-bg);
+    border: 1px solid var(--theme-profile-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .header-profile:hover {
-    background: rgba(255, 255, 255, 0.84);
+    background: var(--theme-profile-hover);
+}
+
+.header-profile > i {
+    color: var(--theme-text-secondary) !important;
 }
 
 .profile-avatar {
@@ -93,20 +211,25 @@ textarea {
 .modal-content,
 .login-card,
 .stat-card {
-    background: rgba(255, 255, 255, 0.86);
-    border: 1px solid rgba(210, 210, 215, 0.78);
+    background: var(--theme-surface);
+    border: 1px solid var(--theme-surface-border);
     box-shadow: var(--shadow-md);
     backdrop-filter: blur(16px) saturate(145%);
     -webkit-backdrop-filter: blur(16px) saturate(145%);
 }
 
+.profile-header {
+    background: var(--theme-surface-strong);
+    border-bottom-color: var(--theme-surface-border);
+}
+
 .tabs-container {
-    border-bottom: 1px solid rgba(210, 210, 215, 0.8);
+    border-bottom: 1px solid var(--theme-surface-border);
 }
 
 .tab-btn {
     border-bottom-width: 2px;
-    color: #6e6e73;
+    color: var(--theme-text-secondary);
     font-weight: 600;
 }
 
@@ -119,10 +242,15 @@ textarea {
 .form-input,
 .form-select,
 .cell-input {
-    border: 1px solid rgba(199, 199, 204, 0.92);
-    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--theme-input-border);
+    background: var(--theme-input-bg);
     border-radius: 12px;
-    color: #1d1d1f;
+    color: var(--theme-text-primary);
+}
+
+.search-box input::placeholder,
+.form-input::placeholder {
+    color: var(--theme-text-secondary);
 }
 
 .search-box input:focus,
@@ -156,14 +284,14 @@ textarea {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.92);
-    color: #1d1d1f;
-    border-color: rgba(199, 199, 204, 0.95);
+    background: var(--theme-surface-strong);
+    color: var(--theme-text-primary);
+    border-color: var(--theme-input-border);
 }
 
 .btn-secondary:hover {
-    background: rgba(246, 246, 248, 0.98);
-    color: #1d1d1f;
+    background: var(--theme-surface);
+    color: var(--theme-text-primary);
 }
 
 .btn-success {
@@ -182,43 +310,63 @@ textarea {
     border-radius: 16px;
 }
 
+.stat-card-label,
+.activity-text,
+.activity-meta,
+.empty-state p {
+    color: var(--theme-text-secondary);
+}
+
+.stat-card-value,
+.empty-state h3 {
+    color: var(--theme-text-primary);
+}
+
 .table-header {
-    border-bottom: 1px solid rgba(210, 210, 215, 0.9);
+    border-bottom: 1px solid var(--theme-surface-border);
 }
 
 .table-wrapper {
-    border: 1px solid rgba(210, 210, 215, 0.92);
+    border: 1px solid var(--theme-surface-border);
     border-radius: 16px;
 }
 
 th {
-    background: linear-gradient(180deg, #f8f9fd 0%, #edf1f8 100%);
-    color: #1d1d1f;
-    border-bottom: 1px solid rgba(210, 210, 215, 0.95);
+    background: var(--theme-table-head-bg);
+    color: var(--theme-table-head-text);
+    border-bottom: 1px solid var(--theme-surface-border);
 }
 
 th:first-child,
 td:first-child {
-    box-shadow: 2px 0 10px rgba(17, 17, 17, 0.05);
+    box-shadow: 2px 0 10px rgba(17, 17, 17, 0.08);
+}
+
+td,
+tr,
+.amount-cell,
+.font-bold,
+.font-extra-bold {
+    color: var(--theme-text-primary);
 }
 
 td:first-child {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--theme-surface-strong);
 }
 
 tbody tr:nth-child(even),
 tbody tr:nth-child(even) td:first-child {
-    background-color: #fbfcff;
+    background-color: var(--theme-row-even);
 }
 
 tbody tr:hover,
 tbody tr:hover td:first-child {
-    background: rgba(10, 132, 255, 0.08) !important;
+    background: var(--theme-row-hover) !important;
     box-shadow: none;
 }
 
 .modal {
-    background: rgba(22, 22, 24, 0.38);
+    background: var(--theme-modal-backdrop);
     backdrop-filter: blur(11px);
     -webkit-backdrop-filter: blur(11px);
 }
@@ -228,15 +376,15 @@ tbody tr:hover td:first-child {
 }
 
 .modal-header {
-    border-bottom: 1px solid rgba(210, 210, 215, 0.9);
+    border-bottom: 1px solid var(--theme-surface-border);
 }
 
 .close-modal {
-    color: #5d5d62;
+    color: var(--theme-close-color);
 }
 
 .close-modal:hover {
-    background: rgba(120, 120, 128, 0.12);
+    background: var(--theme-close-hover);
 }
 
 .dropdown-item {
@@ -244,14 +392,23 @@ tbody tr:hover td:first-child {
 }
 
 .dropdown-item:hover {
-    background-color: rgba(10, 132, 255, 0.1);
+    background-color: var(--theme-dropdown-hover);
+}
+
+#themeToggleIcon {
+    width: 1rem;
+    text-align: center;
 }
 
 .bottom-nav {
-    background: rgba(255, 255, 255, 0.92);
-    border-top: 1px solid rgba(210, 210, 215, 0.9);
+    background: var(--theme-bottom-nav-bg);
+    border-top: 1px solid var(--theme-surface-border);
     backdrop-filter: blur(16px) saturate(145%);
     -webkit-backdrop-filter: blur(16px) saturate(145%);
+}
+
+.bottom-nav-item {
+    color: var(--theme-text-secondary);
 }
 
 .bottom-nav-item.active {
@@ -268,8 +425,8 @@ tbody tr:hover td:first-child {
 }
 
 .toast {
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(210, 210, 215, 0.9);
+    background: var(--theme-toast-bg);
+    border: 1px solid var(--theme-toast-border);
     box-shadow: 0 16px 30px rgba(17, 17, 17, 0.14);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -282,8 +439,14 @@ tbody tr:hover td:first-child {
 
 .login-container {
     background:
-        radial-gradient(780px 340px at 50% -20%, rgba(90, 200, 250, 0.2), transparent 72%),
-        linear-gradient(180deg, #eef2f9 0%, #e8edf6 50%, #dfe5ef 100%);
+        radial-gradient(780px 340px at 50% -20%, var(--theme-login-radial), transparent 72%),
+        linear-gradient(180deg, var(--theme-login-start) 0%, var(--theme-login-mid) 50%, var(--theme-login-end) 100%);
+}
+
+.pull-to-refresh {
+    background: var(--theme-surface-strong);
+    color: var(--brand-blue);
+    border-bottom-color: var(--theme-surface-border);
 }
 
 @media (max-width: 768px) {
@@ -298,7 +461,7 @@ tbody tr:hover td:first-child {
     }
 
     tr {
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(210, 210, 215, 0.95);
+        background: var(--theme-surface-strong);
+        border: 1px solid var(--theme-surface-border);
     }
 }
