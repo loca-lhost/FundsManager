@@ -10,21 +10,6 @@
     <meta name="theme-color" content="#003087">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <script>
-        (() => {
-            try {
-                const key = 'fundsManagerTheme';
-                const saved = localStorage.getItem(key);
-                if (saved === 'dark' || saved === 'light') {
-                    document.documentElement.setAttribute('data-theme', saved);
-                } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                }
-            } catch (e) {
-                // Ignore storage access failures and fall back to default theme.
-            }
-        })();
-    </script>
 
     <!-- Favicon -->
     <link rel="icon"
@@ -201,10 +186,6 @@
                             </button>
                             <button class="dropdown-item" onclick="openPasswordModal()">
                                 <i class="fas fa-key" style="color: var(--brand-dark)"></i> Change Password
-                            </button>
-                            <button class="dropdown-item" id="themeToggleBtn" onclick="toggleTheme()">
-                                <i class="fas fa-moon" id="themeToggleIcon" style="color: var(--brand-dark)"></i>
-                                <span id="themeToggleText">Dark Mode</span>
                             </button>
 
                             <div class="admin-only">
@@ -1130,8 +1111,8 @@
     <script src="js/export.js"></script>
     <script src="js/backup.js"></script>
     <script src="js/audit.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/ui.js?v=20260305"></script>
+    <script src="js/app.js?v=20260305"></script>
 </body>
 
 </html>

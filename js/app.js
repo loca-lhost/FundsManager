@@ -205,7 +205,6 @@ async function createNewYear() {
 // --- BOOTSTRAP ---
 // Setup event listeners and initialize
 function bootstrap() {
-    initializeTheme();
     setupDropdownClose();
     setupInactivityListeners();
     setupToolbarInteractions();
@@ -220,7 +219,19 @@ function bootstrap() {
         initializeData();
     } catch (e) {
         console.error('Initialization failed', e);
-        document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; margin: 2rem; border-radius: 8px; font-family: sans-serif;"><h3>System Error</h3><p>Failed to initialize application data. Please ensure cookies/local storage are enabled.</p><p>' + e.message + '</p></div>';
+        const message = String(e && e.message ? e.message : e || 'Unknown error')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        document.body.innerHTML = `
+            <div style="padding: 2rem; text-align: center; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; margin: 2rem; border-radius: 8px; font-family: sans-serif;">
+                <h3>System Error</h3>
+                <p>Failed to initialize application data. Please ensure cookies/local storage are enabled.</p>
+                <p>${message}</p>
+            </div>
+        `;
     }
 }
 

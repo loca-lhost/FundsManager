@@ -1,4 +1,4 @@
-/* Apple-style visual override layer with light/dark themes */
+/* Apple-style visual override layer */
 
 :root {
     --brand-blue: #0a84ff;
@@ -60,61 +60,6 @@
     --shadow-md: 0 10px 28px rgba(28, 28, 30, 0.08);
     --shadow-lg: 0 18px 46px rgba(28, 28, 30, 0.14);
     --shadow-xl: 0 28px 72px rgba(28, 28, 30, 0.2);
-}
-
-:root[data-theme='dark'] {
-    --brand-dark: #f5f5f7;
-    --brand-white: #191b22;
-    --brand-gray: #13151b;
-    --brand-text: #f5f5f7;
-    --brand-border: #3f4352;
-
-    --theme-text-primary: #f5f5f7;
-    --theme-text-secondary: #a1a1aa;
-    --theme-bg-radial-a: rgba(10, 132, 255, 0.2);
-    --theme-bg-radial-b: rgba(90, 200, 250, 0.14);
-    --theme-bg-linear-start: #0b0c10;
-    --theme-bg-linear-mid: #101218;
-    --theme-bg-linear-end: #151923;
-
-    --theme-header-bg: linear-gradient(160deg, rgba(30, 33, 44, 0.82), rgba(20, 22, 31, 0.78));
-    --theme-header-border: rgba(72, 75, 90, 0.58);
-    --theme-header-shadow: 0 12px 34px rgba(0, 0, 0, 0.42);
-
-    --theme-profile-bg: rgba(42, 45, 56, 0.8);
-    --theme-profile-border: rgba(90, 94, 111, 0.75);
-    --theme-profile-hover: rgba(52, 55, 68, 0.9);
-
-    --theme-surface: rgba(25, 27, 36, 0.86);
-    --theme-surface-strong: rgba(27, 29, 38, 0.94);
-    --theme-surface-border: rgba(75, 79, 95, 0.62);
-
-    --theme-input-bg: rgba(34, 37, 47, 0.9);
-    --theme-input-border: rgba(84, 89, 106, 0.84);
-
-    --theme-table-head-bg: linear-gradient(180deg, #202532 0%, #1a1f2b 100%);
-    --theme-table-head-text: #f5f5f7;
-    --theme-row-even: #1a1d27;
-    --theme-row-hover: rgba(10, 132, 255, 0.2);
-
-    --theme-modal-backdrop: rgba(0, 0, 0, 0.58);
-    --theme-close-color: #d0d0d5;
-    --theme-close-hover: rgba(255, 255, 255, 0.12);
-
-    --theme-dropdown-hover: rgba(10, 132, 255, 0.22);
-    --theme-bottom-nav-bg: rgba(19, 20, 27, 0.9);
-    --theme-toast-bg: rgba(24, 26, 34, 0.94);
-    --theme-toast-border: rgba(82, 84, 96, 0.72);
-
-    --theme-login-radial: rgba(10, 132, 255, 0.18);
-    --theme-login-start: #0f1117;
-    --theme-login-mid: #141824;
-    --theme-login-end: #1a1f2e;
-
-    --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.34);
-    --shadow-lg: 0 22px 52px rgba(0, 0, 0, 0.4);
-    --shadow-xl: 0 30px 78px rgba(0, 0, 0, 0.5);
 }
 
 body {
@@ -395,11 +340,6 @@ tbody tr:hover td:first-child {
     background-color: var(--theme-dropdown-hover);
 }
 
-#themeToggleIcon {
-    width: 1rem;
-    text-align: center;
-}
-
 .bottom-nav {
     background: var(--theme-bottom-nav-bg);
     border-top: 1px solid var(--theme-surface-border);
@@ -440,11 +380,6 @@ tbody tr:hover td:first-child {
 .status-rejected {
     background: rgba(255, 69, 58, 0.2);
     color: #a20d05;
-}
-
-:root[data-theme='dark'] .status-rejected {
-    background: rgba(255, 69, 58, 0.26);
-    color: #ffc2bd;
 }
 
 .login-container {
