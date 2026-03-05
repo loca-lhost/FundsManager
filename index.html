@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://cloud.appwrite.io wss://cloud.appwrite.io https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com;">
+    <title>Funds Manager</title>
+    <meta name="theme-color" content="#003087">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Favicon -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%230057B8;stop-opacity:1%22 /><stop offset=%22100%25%22 style=%22stop-color:%23003087;stop-opacity:1%22 /></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22url(%23grad)%22/><text x=%2250%22 y=%2250%22 font-family=%22Arial, sans-serif%22 font-size=%2265%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.35em%22 font-weight=%22800%22>&#x20B5;</text></svg>">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Ant Design CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.12.5/dist/reset.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/antd@5.12.5/dist/antd.min.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Noto+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- SheetJS for Excel Import/Export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <!-- html2pdf for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Appwrite JS -->
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@13.0.0"></script>
+
+    <!-- JSZip for Backup Compression -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- CryptoJS for Backup Encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+    <link rel="stylesheet" href="css/responsive.css">
+
+</head>
+
+<body>
+    <!-- Pull to Refresh Indicator -->
+    <div id="pullToRefresh" class="pull-to-refresh">
+        <div class="pull-to-refresh-icon">
+            <i class="fas fa-sync-alt"></i>
+            <span style="font-size: 0.9rem; font-weight: 500;">Pull to refresh</span>
+        </div>
+    </div>
+
+    <!-- Initial App Loader -->
+    <div id="initialLoader"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="logo"
+            style="width: 80px; height: 80px; font-size: 2.5rem; margin-bottom: 1.5rem; animation: pulse 2s infinite;">
+            &#x20B5;</div>
+        <div class="spinner" style="width: 40px; height: 40px; border-width: 4px;"></div>
+        <p style="margin-top: 1rem; color: #666; font-family: sans-serif; font-weight: 500;">Initializing Funds
+            Manager...</p>
+    </div>
+
+    <!-- Login Container -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">
+                    &#x20B5;
+                </div>
+                <h2>Funds Manager</h2>
+                <p>Please sign in to continue</p>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="loginUsername" required placeholder="Enter email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-input" id="loginPassword" required
+                            placeholder="Enter password">
+                        <button type="button" class="password-toggle"
+                            onclick="togglePasswordVisibility('loginPassword')"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                        <label
+                            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 1rem; color: #666;">
+                            <input type="checkbox" id="rememberMe"> Remember me
+                        </label>
+                        <a href="javascript:void(0)" onclick="openForgotPasswordModal()"
+                            style="font-size: 0.95rem; color: var(--brand-blue); text-decoration: none;">Forgot
+                            Password?</a>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary login-btn">Sign In <i class="fas fa-arrow-right"
+                            style="margin-left: 0.5rem;"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="appContent" style="display: none;">
+
+        <!-- Floating Action Button (Mobile) -->
+        <div class="fab-container" id="fabContainer">
+            <div class="fab-overlay" onclick="toggleFab()"></div>
+            <div class="fab-actions">
+                <button class="fab-action-btn" onclick="vibrate(); openIssueOverdraftModal(); toggleFab()"
+                    data-label="Issue Overdraft">
+                    <i class="fas fa-hand-holding-water"></i>
+                </button>
+                <button class="fab-action-btn" onclick="vibrate(); openContributionModal(); toggleFab()"
+                    data-label="Record Contribution">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </button>
+                <button class="fab-action-btn" onclick="vibrate(); openAddMemberModal(); toggleFab()"
+                    data-label="Add Member">
+                    <i class="fas fa-user-plus"></i>
+                </button>
+            </div>
+            <button class="fab-main" onclick="vibrate(); toggleFab()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="bottom-nav-item active" onclick="switchTab('contributions')" id="bottom-nav-contributions">
+                <i class="fas fa-hand-holding-usd"></i>
+                <span>Contributions</span>
+            </div>
+            <div class="bottom-nav-item" onclick="switchTab('overdrafts')" id="bottom-nav-overdrafts">
+                <i class="fas fa-hand-holding-water"></i>
+                <span>Overdrafts</span>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">
+                        &#x20B5;
+                    </div>
+                    <div class="header-title">
+                        <h1>Funds Manager</h1>
+                        <p>Funds Management Systems</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="header-profile" onclick="toggleProfileDropdown()">
+                        <div class="profile-avatar" id="headerAvatar">U</div>
+                        <div class="profile-name" id="headerUsername">User</div>
+                        <i class="fas fa-chevron-down" style="font-size: 0.9rem; color: rgba(255,255,255,0.7);"></i>
+
+                        <div class="dropdown-content" id="profileDropdown"
+                            style="top: 100%; right: 0; margin-top: 0.5rem;">
+                            <div class="profile-header">
+                                <div style="font-weight: 700; color: var(--brand-dark);" id="dropdownName">User Name
+                                </div>
+                                <div style="font-size: 0.9rem; color: #666; text-transform: uppercase;"
+                                    id="dropdownRole">Role</div>
+                            </div>
+
+                            <div class="dropdown-section-label">Account</div>
+                            <button class="dropdown-item" id="btnVerifyEmail" onclick="resendVerificationEmail()"
+                                style="display: none;">
+                                <i class="fas fa-envelope" style="color: var(--brand-warning)"></i> Verify Email
+                            </button>
+                            <button class="dropdown-item" onclick="openPasswordModal()">
+                                <i class="fas fa-key" style="color: var(--brand-dark)"></i> Change Password
+                            </button>
+
+                            <div class="admin-only">
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section-label">Administration</div>
+                                <button class="dropdown-item" onclick="openSettingsModal()">
+                                    <i class="fas fa-cog" style="color: var(--brand-dark)"></i> Settings
+                                </button>
+                                <button class="dropdown-item" onclick="openUserModal()">
+                                    <i class="fas fa-users-cog" style="color: var(--brand-dark)"></i> Manage Users
+                                </button>
+                                <button class="dropdown-item" onclick="openAuditModal()">
+                                    <i class="fas fa-history" style="color: var(--brand-dark)"></i> Audit Logs
+                                </button>
+                            </div>
+
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" id="btnDataManagement" onclick="openBackupModal()">
+                                <i class="fas fa-database" style="color: var(--brand-blue)"></i> Data Management
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <button class="dropdown-item" onclick="logout()">
+                                <i class="fas fa-sign-out-alt" style="color: var(--brand-error)"></i> Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <div class="container">
+            <!-- Tabs -->
+            <div class="tabs-container">
+                <button class="tab-btn active" onclick="switchTab('contributions')"
+                    id="tab-contributions">Contributions</button>
+                <button class="tab-btn" onclick="switchTab('overdrafts')" id="tab-overdrafts">Overdrafts</button>
+            </div>
+
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search...">
+                    </div>
+                    <select class="form-select" id="yearFilter" style="width: auto; min-width: 90px;"
+                        onchange="changeYear(this.value)">
+                        <!-- Populated by JS -->
+                    </select>
+                    <select class="form-select" id="monthFilter" style="width: auto; min-width: 120px;">
+                        <option value="">All Months</option>
+                        <option value="January">January</option>
+                        <option value="February">February</option>
+                        <option value="March">March</option>
+                        <option value="April">April</option>
+                        <option value="May">May</option>
+                        <option value="June">June</option>
+                        <option value="July">July</option>
+                        <option value="August">August</option>
+                        <option value="September">September</option>
+                        <option value="October">October</option>
+                        <option value="November">November</option>
+                        <option value="December">December</option>
+                    </select>
+                </div>
+                <div class="toolbar-right">
+                    <button class="btn btn-primary" id="btnAddMember" onclick="openAddMemberModal()">
+                        <i class="fas fa-user-plus"></i> Add Member
+                    </button>
+                    <button class="btn btn-primary" id="btn-record-contribution" onclick="openBulkContributionModal()">
+                        <i class="fas fa-hand-holding-usd"></i> Record Contribution
+                    </button>
+                    <button class="btn btn-primary hidden" id="btn-issue-overdraft" onclick="openIssueOverdraftModal()">
+                        <i class="fas fa-hand-holding-water"></i> Issue Overdraft
+                    </button>
+
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-btn" id="btnOperations" onclick="toggleDropdown()">
+                            <i class="fas fa-ellipsis-v"></i> Operations
+                        </button>
+                        <div id="actionsDropdown" class="dropdown-content">
+                            <button class="dropdown-item" onclick="createNewYear()">
+                                <i class="fas fa-calendar-plus" style="color: var(--brand-gold)"></i> Start New Year
+                            </button>
+                            <button class="dropdown-item" onclick="openDividendModal()">
+                                <i class="fas fa-calculator" style="color: var(--brand-success)"></i> Calculate
+                                Dividends
+                            </button>
+                            <button class="dropdown-item" onclick="toggleArchivedView()">
+                                <i class="fas fa-archive" id="archiveToggleIcon" style="color: #666"></i> <span
+                                    id="archiveToggleText">Show Archived</span>
+                            </button>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section-label">Reports</div>
+                            <button class="dropdown-item" id="btnReportContributions" onclick="generatePDF()">
+                                <i class="fas fa-file-invoice-dollar" style="color: var(--brand-blue)"></i>
+                                Contributions Report
+                            </button>
+                            <button class="dropdown-item" id="btnReportOverdrafts" onclick="generatePDF()"
+                                style="display: none;">
+                                <i class="fas fa-file-invoice" style="color: var(--brand-error)"></i> Overdrafts Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container" id="contributionsSection">
+                <div class="table-header">
+                    <h2 class="table-title">Income Contributions</h2>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>Member Name</th>
+                                <th>Account Number</th>
+                                <th style="text-align: right">January</th>
+                                <th style="text-align: right">February</th>
+                                <th style="text-align: right">March</th>
+                                <th style="text-align: right">April</th>
+                                <th style="text-align: right">May</th>
+                                <th style="text-align: right">June</th>
+                                <th style="text-align: right">July</th>
+                                <th style="text-align: right">August</th>
+                                <th style="text-align: right">September</th>
+                                <th style="text-align: right">October</th>
+                                <th style="text-align: right">November</th>
+                                <th style="text-align: right">December</th>
+                                <th style="text-align: right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td colspan="2">MONTHLY TOTALS</td>
+                                <td class="amount-cell" id="totalJan">0.00</td>
+                                <td class="amount-cell" id="totalFeb">0.00</td>
+                                <td class="amount-cell" id="totalMar">0.00</td>
+                                <td class="amount-cell" id="totalApr">0.00</td>
+                                <td class="amount-cell" id="totalMay">0.00</td>
+                                <td class="amount-cell" id="totalJun">0.00</td>
+                                <td class="amount-cell" id="totalJul">0.00</td>
+                                <td class="amount-cell" id="totalAug">0.00</td>
+                                <td class="amount-cell" id="totalSep">0.00</td>
+                                <td class="amount-cell" id="totalOct">0.00</td>
+                                <td class="amount-cell" id="totalNov">0.00</td>
+                                <td class="amount-cell" id="totalDec">0.00</td>
+                                <td class="amount-cell" id="grandTotal">0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Overdrafts Table -->
+            <div class="table-container hidden" id="overdraftsSection">
+                <div class="table-header">
+                    <h2 class="table-title">Member Overdrafts</h2>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="overdraftsTable">
+                        <thead>
+                            <tr>
+                                <th>Member Name</th>
+                                <th>Date Issued</th>
+                                <th style="text-align: right">Principal</th>
+                                <th style="text-align: right">Interest</th>
+                                <th style="text-align: right">Total Due</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overdraftsTableBody">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card blue" id="card-month">
+                    <div class="stat-card-content">
+                        <div class="stat-card-info">
+                            <div class="stat-card-label">Current Month</div>
+                            <div class="stat-card-value" id="currentMonth">-</div>
+                        </div>
+                        <div class="stat-card-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                    </div>
+                    <i class="fas fa-calendar-check stat-card-bg-icon"></i>
+                </div>
+
+                <div class="stat-card green" id="card-total">
+                    <div class="stat-card-content">
+                        <div class="stat-card-info">
+                            <div class="stat-card-label">Total Contributions</div>
+                            <div class="stat-card-value" id="totalContributions">GH&#x20B5; 0</div>
+                        </div>
+                        <div class="stat-card-icon">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </div>
+                    </div>
+                    <i class="fas fa-hand-holding-usd stat-card-bg-icon"></i>
+                </div>
+
+                <div class="stat-card blue" id="card-active">
+                    <div class="stat-card-content">
+                        <div class="stat-card-info">
+                            <div class="stat-card-label">Active Members</div>
+                            <div class="stat-card-value" id="totalMembers">0</div>
+                        </div>
+                        <div class="stat-card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <i class="fas fa-users stat-card-bg-icon"></i>
+                </div>
+            </div>
+
+            <!-- Recent Activity Widget -->
+            <div class="activity-widget" id="activityWidget">
+                <div class="widget-header">
+                    <h3 class="widget-title">Recent Activity</h3>
+                    <button class="btn btn-sm btn-secondary" onclick="openAuditModal()">View All</button>
+                </div>
+                <div class="activity-list" id="activityList"></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 3rem; padding-bottom: 2rem; color: #999; font-size: 0.85rem;">
+                &copy; <span id="footerYear"></span> Funds Manager. All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal" id="passwordModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Change Password</h3>
+                <button class="close-modal" onclick="closePasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="passwordForm" onsubmit="handlePasswordChange(event)">
+                <div class="form-group">
+                    <label class="form-label">Current Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-input" id="currentPassword" required>
+                        <button type="button" class="password-toggle"
+                            onclick="togglePasswordVisibility('currentPassword')"><i class="fas fa-eye"></i></button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-input" id="newPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-input" id="confirmPassword" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Record Contribution Modal -->
+    <div class="modal" id="contributionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Record Contribution</h3>
+                <button class="close-modal" onclick="closeContributionModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="contributionForm" onsubmit="saveContribution(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Member *</label>
+                        <select class="form-select" id="contribMember" required>
+                            <option value="">Select Member</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Month *</label>
+                        <select class="form-select" id="contribMonth" required>
+                            <option value="">Select Month</option>
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (GH&#x20B5;) *</label>
+                    <input type="number" class="form-input" id="contribAmount" required min="0" step="0.01">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save"></i> <span class="btn-text">Save Contribution</span>
+                    </button>
+                    <button type="button" id="btnDeleteContribution" class="btn btn-danger"
+                        onclick="deleteContribution()" style="display: none; flex: 1;">
+                        <i class="fas fa-trash"></i> <span class="btn-text">Delete</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeContributionModal()" style="flex: 1;">
+                        <i class="fas fa-times"></i> <span class="btn-text">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Issue Overdraft Modal -->
+    <div class="modal" id="overdraftModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Issue Overdraft</h3>
+                <button class="close-modal" onclick="closeOverdraftModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="overdraftForm" onsubmit="saveOverdraft(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Member *</label>
+                        <select class="form-select" id="overdraftMember" required>
+                            <option value="">Select Member</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount (GH&#x20B5;) *</label>
+                        <input type="number" class="form-input" id="overdraftAmount" required min="1" step="0.01"
+                            oninput="calculateOverdraftInterest()">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Interest (2%)</label>
+                        <input type="text" class="form-input" id="overdraftInterest" readonly value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Total Repayment</label>
+                        <input type="text" class="form-input" id="overdraftTotal" readonly value="0.00"
+                            style="font-weight: bold; color: var(--brand-blue);">
+                    </div>
+                </div>
+
+                <div
+                    style="display: flex; gap: 1rem; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                    <button type="button" class="btn btn-secondary" onclick="previewOverdraftLetter()" style="flex: 1;"
+                        title="Preview Letter">
+                        <i class="fas fa-eye"></i> <span class="btn-text">Preview Letter</span>
+                    </button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save"></i> <span class="btn-text">Issue Overdraft</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeOverdraftModal()" style="flex: 1;">
+                        <i class="fas fa-times"></i> <span class="btn-text">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Overdraft Confirmation Modal -->
+    <div class="modal" id="overdraftConfirmModal" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Overdraft</h3>
+                <button class="close-modal" onclick="closeOverdraftConfirmModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <p id="overdraftConfirmMessage">Are you sure?</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="closeOverdraftConfirmModal()"
+                    style="flex: 1;">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmIssueOverdraft()" style="flex: 1;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Letter Preview Modal -->
+    <div class="modal" id="letterPreviewModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Letter Preview</h3>
+                <button class="close-modal" onclick="closeLetterPreviewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="letterPreviewContent"
+                style="max-height: 60vh; overflow-y: auto; border: 1px solid #eee; padding: 1rem; background: #f9f9f9;">
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="printOverdraftLetter()">
+                    <i class="fas fa-print"></i> <span class="btn-text">Print</span>
+                </button>
+                <button class="btn btn-primary" onclick="saveOverdraftLetter()">
+                    <i class="fas fa-file-pdf"></i> <span class="btn-text">Save PDF</span>
+                </button>
+                <button class="btn btn-secondary" onclick="closeLetterPreviewModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Management Modal -->
+    <div class="modal" id="dataModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Data Management</h3>
+                <button class="close-modal" onclick="closeDataModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <style>
+                .action-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .action-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 1rem;
+                    width: 100%;
+                    padding: 1rem;
+                    text-align: left;
+                    border: 1px solid var(--brand-border);
+                    border-radius: 12px;
+                    background: white;
+                    transition: all 0.2s;
+                }
+
+                .action-btn:hover {
+                    background: var(--brand-gray);
+                    transform: translateX(5px);
+                }
+
+                .action-btn i {
+                    font-size: 1.2rem;
+                    width: 24px;
+                    text-align: center;
+                }
+
+                .action-info {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .action-title {
+                    font-weight: 600;
+                    color: var(--brand-dark);
+                }
+
+                .action-desc {
+                    font-size: 0.8rem;
+                    color: #666;
+                }
+            </style>
+
+            <div class="action-list">
+                <button class="action-btn" onclick="importExcel()">
+                    <i class="fas fa-file-import" style="color: var(--brand-success)"></i>
+                    <div class="action-info">
+                        <span class="action-title">Import Excel</span>
+                        <span class="action-desc">Import members and contributions from file</span>
+                    </div>
+                </button>
+                <button class="action-btn" onclick="exportExcel()">
+                    <i class="fas fa-file-export" style="color: var(--brand-blue)"></i>
+                    <div class="action-info">
+                        <span class="action-title">Export Excel</span>
+                        <span class="action-desc">Download current data as Excel file</span>
+                    </div>
+                </button>
+                <button class="action-btn" onclick="exportArchivedMembers()">
+                    <i class="fas fa-file-archive" style="color: var(--brand-warning)"></i>
+                    <div class="action-info">
+                        <span class="action-title">Export Archived</span>
+                        <span class="action-desc">Download archived members list</span>
+                    </div>
+                </button>
+            </div>
+
+            <div id="adminDataActions"
+                style="border-top: 1px solid #eee; padding-top: 1rem; margin-top: 1rem; display: none;">
+                <h4
+                    style="font-size: 0.75rem; color: #999; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 700; letter-spacing: 0.5px;">
+                    System Maintenance</h4>
+                <div class="action-list">
+                    <button class="action-btn" onclick="backupData()">
+                        <i class="fas fa-download" style="color: var(--brand-dark)"></i>
+                        <div class="action-info">
+                            <span class="action-title">Backup System</span>
+                            <span class="action-desc">Create a full system backup file</span>
+                        </div>
+                    </button>
+                    <button class="action-btn" onclick="restoreData()">
+                        <i class="fas fa-upload" style="color: var(--brand-warning)"></i>
+                        <div class="action-info">
+                            <span class="action-title">Restore Local Backup</span>
+                            <span class="action-desc">Restore from a local JSON/ZIP file</span>
+                        </div>
+                    </button>
+                    <button class="action-btn" onclick="openCloudRestoreModal()">
+                        <i class="fas fa-cloud-download-alt" style="color: var(--brand-blue)"></i>
+                        <div class="action-info">
+                            <span class="action-title">Cloud Restore</span>
+                            <span class="action-desc">Restore from automated cloud backups</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cloud Restore Modal -->
+    <div class="modal" id="cloudRestoreModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Cloud Backups</h3>
+                <button class="close-modal" onclick="closeCloudRestoreModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Backup Details</th>
+                            <th style="width: 60px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cloudBackupList">
+                        <tr>
+                            <td colspan="2" style="text-align:center;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup Options Modal -->
+    <div class="modal" id="backupOptionsModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Backup Options</h3>
+                <button class="close-modal" onclick="closeBackupModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form onsubmit="performBackup(event)">
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="backupEncrypt" onchange="toggleBackupPassword()">
+                        Encrypt Backup
+                    </label>
+                </div>
+                <div class="form-group" id="backupPasswordGroup" style="display: none;">
+                    <label class="form-label">Encryption Password</label>
+                    <input type="password" class="form-input" id="backupPassword" placeholder="Enter password">
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeBackupModal()"
+                        style="flex: 1;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Create Backup</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Member Modal -->
+    <div class="modal" id="memberModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add New Member</h3>
+                <button class="close-modal" onclick="closeMemberModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="memberForm" onsubmit="saveMember(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Member Name *</label>
+                        <input type="text" class="form-input" id="memberName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Account Number *</label>
+                        <input type="text" class="form-input" id="accountNumber" required pattern="[0-9]{1,13}"
+                            inputmode="numeric" placeholder="Account Number (max 13 digits)" maxlength="13"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Initial Contribution (Optional)</label>
+                    <div class="form-row">
+                        <select class="form-select" id="initialMonth">
+                            <option value="">Select Month</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                        <input type="number" class="form-input" id="initialAmount" placeholder="Amount (GH&#x20B5;)"
+                            inputmode="decimal" min="0" step="0.01">
+                    </div>
+                </div>
+
+                <div id="defaultModalButtons" style="display: flex; gap: 1rem; margin-top: 1rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save"></i> <span class="btn-text">Save</span>
+                    </button>
+                    <div id="modalArchiveBtn" style="display: none; flex: 1;">
+                        <button type="button" class="btn btn-danger-subtle" id="btnArchiveToggle"
+                            onclick="showArchiveConfirmation()" style="width: 100%;">
+                            <i class="fas fa-archive"></i> <span id="archiveBtnText" class="btn-text">Archive</span>
+                        </button>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="closeMemberModal()" style="flex: 1;">
+                        <i class="fas fa-times"></i> <span class="btn-text">Cancel</span>
+                    </button>
+                </div>
+
+                <div id="archiveConfirmationButtons"
+                    style="display: none; gap: 1rem; margin-top: 1rem; align-items: center;">
+                    <div style="flex: 1; text-align: center; color: var(--brand-dark); font-weight: 600;"
+                        id="archiveConfirmMsg">Are you sure?</div>
+                    <button type="button" class="btn btn-primary" id="btnArchiveConfirm"
+                        onclick="confirmArchiveFromModal()" style="flex: 1;">
+                        Yes
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="hideArchiveConfirmation()"
+                        style="flex: 1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content" style="max-width: 400px; border-top: 5px solid var(--brand-error);">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--brand-error);"><i class="fas fa-archive"></i> Confirm
+                    Archive</h3>
+                <button class="close-modal" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="margin-bottom: 2rem; text-align: center;">
+                <div style="font-size: 3rem; color: var(--brand-error); margin-bottom: 1rem; opacity: 0.1;">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <p>Are you sure you want to archive this member? They will be hidden from the main list but can be
+                    restored later.</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()" style="flex: 1;">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()" style="flex: 1;">Archive</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore Confirmation Modal -->
+    <div class="modal" id="restoreModal">
+        <div class="modal-content" style="max-width: 400px; border-top: 5px solid var(--brand-success);">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--brand-success);"><i class="fas fa-trash-restore"></i>
+                    Confirm Restore</h3>
+                <button class="close-modal" onclick="closeRestoreModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="margin-bottom: 2rem; text-align: center;">
+                <div style="font-size: 3rem; color: var(--brand-success); margin-bottom: 1rem; opacity: 0.1;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <p>Are you sure you want to restore this member? They will appear in the active list again.</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="closeRestoreModal()" style="flex: 1;">Cancel</button>
+                <button class="btn btn-success" onclick="confirmRestore()" style="flex: 1;">Restore</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Confirmation Modal -->
+    <div class="modal" id="deleteUserModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Archive User</h3>
+                <button class="close-modal" onclick="closeDeleteUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <p>Are you sure you want to archive this user? They will no longer be able to login.</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="closeDeleteUserModal()" style="flex: 1;">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmArchiveUser()" style="flex: 1;">Archive</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Logs Modal -->
+    <div class="modal" id="auditModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title">System Audit Logs</h3>
+                <button class="close-modal" onclick="closeAuditModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div
+                style="background: #f8fafc; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid var(--brand-border);">
+                <div class="form-row" style="align-items: end; gap: 0.5rem;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 2;">
+                        <label class="form-label compact-label">Search</label>
+                        <input type="text" class="form-input" id="auditSearch" placeholder="User, Action or Details..."
+                            onkeyup="renderAuditLogs()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                        <label class="form-label compact-label">Start Date</label>
+                        <input type="date" class="form-input" id="auditStartDate" onchange="renderAuditLogs()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                        <label class="form-label compact-label">End Date</label>
+                        <input type="date" class="form-input" id="auditEndDate" onchange="renderAuditLogs()">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end;">
+                    <button class="btn btn-secondary btn-sm" onclick="exportAuditLogsCSV()">
+                        <i class="fas fa-file-csv"></i> Export Filtered CSV
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="resetAuditLogs()">
+                        <i class="fas fa-trash"></i> Clear Logs
+                    </button>
+                </div>
+            </div>
+            <div class="table-wrapper" style="max-height: 600px; overflow-y: auto;">
+                <table style="width: 100%;">
+                    <thead style="position: sticky; top: 0; z-index: 10;">
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody"></tbody>
+                </table>
+            </div>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--brand-border);">
+                <button class="btn btn-secondary btn-sm" id="auditPrevBtn" onclick="changeAuditPage(-1)" disabled><i
+                        class="fas fa-chevron-left"></i> Previous</button>
+                <button class="btn btn-secondary btn-sm" id="auditNextBtn" onclick="changeAuditPage(1)" disabled>Next <i
+                        class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Manage Users</h3>
+                <button class="close-modal" onclick="closeUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem; color: var(--brand-dark);">Add New User</h4>
+                <form id="addUserForm" onsubmit="addUser(event)">
+                    <div class="form-row" style="align-items: end;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label compact-label">Email</label>
+                            <input type="email" class="form-input" id="newEmail" required inputmode="email">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label compact-label">Full Name</label>
+                            <input type="text" class="form-input" id="newFullname" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label compact-label">Role</label>
+                            <select class="form-select" id="newRole">
+                                <option value="viewer">Viewer</option>
+                                <option value="fund_manager">Fund Manager</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-bottom: 2px;">Add</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="table-wrapper">
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Last Login</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal" id="forgotPasswordModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Reset Password</h3>
+                <button class="close-modal" onclick="closeForgotPasswordModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="forgotPasswordForm" onsubmit="handleForgotPassword(event)">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="fpEmail" required inputmode="email"
+                        placeholder="Enter your registered email">
+                </div>
+                <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">
+                    We will send a password recovery link to your email.
+                </p>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Send Recovery Link</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal (Recovery) -->
+    <div class="modal" id="resetPasswordModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Set New Password</h3>
+            </div>
+            <form id="resetPasswordForm" onsubmit="handleCompleteRecovery(event)">
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-input" id="rpNewPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-input" id="rpConfirmPassword" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recovery Code Display Modal -->
+    <div class="modal" id="recoveryCodeModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Save This Recovery Code</h3>
+                <button class="close-modal"
+                    onclick="document.getElementById('recoveryCodeModal').classList.remove('active')"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <p style="margin-bottom: 1rem; color: #666;">Please save this code in a safe place. You will need it to
+                reset your password if you forget it.</p>
+            <div id="recoveryCodeDisplay"
+                style="background: var(--brand-gray); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 2px; border: 1px solid var(--brand-border); margin-bottom: 1.5rem; user-select: all;">
+            </div>
+            <button class="btn btn-primary"
+                onclick="document.getElementById('recoveryCodeModal').classList.remove('active')" style="width: 100%;">I
+                have saved it</button>
+        </div>
+    </div>
+
+    <!-- Member Profile Modal -->
+    <div class="modal" id="memberProfileModal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Member Profile</h3>
+                <button class="close-modal" onclick="closeMemberProfileModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="memberProfileContent">
+                <!-- Content populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Application Settings</h3>
+                <button class="close-modal" onclick="closeSettingsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="settingsForm" onsubmit="saveSettings(event)">
+                <div class="form-group">
+                    <label class="form-label">Inactivity Timeout (minutes)</label>
+                    <input type="number" class="form-input" id="settingInactivity" required min="1" max="60">
+                    <small style="color: #666; font-size: 0.9rem;">Auto-logout after this many minutes of
+                        inactivity.</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Audit Log Retention (days)</label>
+                    <input type="number" class="form-input" id="settingAuditRetention" required min="1" max="365">
+                    <small style="color: #666; font-size: 0.9rem;">Automatically archive logs older than this.</small>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Save Settings</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dividend Calculation Modal -->
+    <div class="modal" id="dividendModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title">End of Year Dividend Calculation</h3>
+                <button class="close-modal" onclick="closeDividendModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group"
+                style="background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 1rem;">Profit Breakdown</h4>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Overdraft Interest (System)</label>
+                        <input type="text" class="form-input" id="systemOverdraftInterest" readonly value="0.00"
+                            style="background-color: #e6f7ff; color: var(--brand-blue); font-weight: 600;">
+                        <small style="color: #666; font-size: 0.8rem;">Total interest from overdrafts recorded this
+                            year.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Savings Interest (Bank)</label>
+                        <input type="number" class="form-input" id="manualSavingsInterest" placeholder="0.00" min="0"
+                            step="0.01" oninput="updateTotalDividend()">
+                        <small style="color: #666; font-size: 0.8rem;">Interest earned from bank savings
+                            account.</small>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e1e8ed; display: flex; gap: 1rem; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label class="form-label">Total Distributable Dividend</label>
+                        <input type="text" class="form-input" id="totalInterestInput" readonly value="0.00"
+                            style="font-size: 1.2rem; font-weight: 700; color: var(--brand-success);">
+                    </div>
+                    <button class="btn btn-primary" onclick="calculateDividends()" style="height: 46px;">Calculate
+                        Distribution</button>
+                </div>
+                <small style="color: #666; display: block; margin-top: 1rem;">Calculation uses the <strong>Time-Weighted
+                        Product Method</strong>: Contributions made earlier in the year earn more interest (Jan = 12pts,
+                    Dec = 1pt).</small>
+            </div>
+            <div id="dividendResults" style="display: none; margin-top: 2rem;">
+                <div class="table-wrapper" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
+                    <table id="dividendTable" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th style="text-align: right">Total Contrib.</th>
+                                <th style="text-align: right">Share %</th>
+                                <th style="text-align: right">Dividend</th>
+                                <th style="text-align: right">Total Payout</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dividendTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="text-align: right; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="saveDividendToHistory()">
+                        <i class="fas fa-save"></i> <span class="btn-text">Save to History</span>
+                    </button>
+                    <button class="btn btn-success" onclick="exportDividendExcel()">
+                        <i class="fas fa-file-excel"></i> <span class="btn-text">Export Excel</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="printDividendReport()">
+                        <i class="fas fa-print"></i> <span class="btn-text">Print Report</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Overdraft Modal -->
+    <div class="modal" id="issueOverdraftModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Issue Overdraft</h3>
+                <button class="close-modal" onclick="closeIssueOverdraftModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="issueOverdraftForm" onsubmit="issueOverdraft(event)">
+                <div class="form-group">
+                    <label class="form-label">Select Member</label>
+                    <select class="form-select" id="odMember" required>
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Amount (GH&#x20B5;)</label>
+                    <input type="number" class="form-input" id="odAmount" required min="1" step="0.01"
+                        inputmode="decimal" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason (Optional)</label>
+                    <input type="text" class="form-input" id="odReason" placeholder="e.g. Medical emergency">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Issue Overdraft</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Repay Overdraft Modal -->
+    <div class="modal" id="repayOverdraftModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Repay Overdraft</h3>
+                <button class="close-modal" onclick="closeRepayOverdraftModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="repayOverdraftForm" onsubmit="repayOverdraft(event)">
+                <input type="hidden" id="repayOverdraftId">
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #666;">Member:</span>
+                        <span style="font-weight: 600;" id="repayMemberName">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #666;">Total Due:</span>
+                        <span style="font-weight: 600;" id="repayTotalDue">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="color: #666;">Amount Paid:</span>
+                        <span style="font-weight: 600; color: var(--brand-success);" id="repayAmountPaid">-</span>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 0.5rem;">
+                        <span style="color: var(--brand-dark); font-weight: 600;">Remaining:</span>
+                        <span style="font-weight: 700; color: var(--brand-error);" id="repayRemaining">-</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Repayment Amount (GH&#x20B5;)</label>
+                    <input type="number" class="form-input" id="repayAmount" required min="0.01" step="0.01"
+                        inputmode="decimal" placeholder="0.00">
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;">Record Payment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Backup & Data Management Modal -->
+    <div class="modal" id="backupModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Data Management</h3>
+                <button class="close-modal" onclick="closeBackupModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="display: grid; gap: 1rem;">
+                <div
+                    style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                    <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
+                        <i class="fas fa-cloud-upload-alt"
+                            style="color: var(--brand-blue); margin-right: 0.5rem;"></i>Cloud Backup
+                    </h4>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-primary" onclick="backupToCloud()" style="flex: 1;">
+                            <i class="fas fa-upload"></i> Backup
+                        </button>
+                        <button class="btn btn-secondary" onclick="restoreFromCloud()" style="flex: 1;">
+                            <i class="fas fa-download"></i> Restore
+                        </button>
+                    </div>
+                </div>
+                <div
+                    style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                    <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
+                        <i class="fas fa-hdd" style="color: #666; margin-right: 0.5rem;"></i>Local Backup
+                    </h4>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-primary" onclick="backupToLocal()" style="flex: 1;">
+                            <i class="fas fa-save"></i> Save File
+                        </button>
+                        <button class="btn btn-secondary" onclick="restoreFromLocal()" style="flex: 1;">
+                            <i class="fas fa-folder-open"></i> Load File
+                        </button>
+                    </div>
+                </div>
+                <div
+                    style="background: #f8fafc; padding: 1.25rem; border-radius: 12px; border: 1px solid var(--brand-border);">
+                    <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
+                        <i class="fas fa-file-excel"
+                            style="color: var(--brand-success); margin-right: 0.5rem;"></i>Export / Import
+                    </h4>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="exportToExcel()" style="flex: 1;">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportToCSV()" style="flex: 1;">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                        <button class="btn btn-secondary" onclick="importExcel()" style="flex: 1;">
+                            <i class="fas fa-file-upload"></i> Import
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Year Confirmation Modal -->
+    <div class="modal" id="newYearModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Start New Year</h3>
+                <button class="close-modal" onclick="closeNewYearModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="margin-bottom: 2rem;">
+                <p id="newYearMessage">Start new year?</p>
+                <div style="margin-top: 1rem;">
+                    <label class="form-label" style="font-size: 0.85rem; color: #666;">Type <strong
+                            style="color: var(--brand-dark);">CONFIRM</strong> to proceed:</label>
+                    <input type="text" class="form-input" id="newYearConfirmInput" placeholder="CONFIRM"
+                        style="text-transform: uppercase;">
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-secondary" onclick="closeNewYearModal()" style="flex: 1;">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmCreateNewYear()" style="flex: 1;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for Excel import -->
+    <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;"
+        onchange="handleFileImport(event)">
+    <!-- Hidden file input for JSON restore -->
+    <input type="file" id="restoreFileInput" accept=".json,.zip" style="display: none;"
+        onchange="handleRestoreFile(event)">
+    <!-- Application JS (load order matters: config > state > utils > domain > UI > app) -->
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/members.js"></script>
+    <script src="js/contributions.js"></script>
+    <script src="js/overdrafts.js"></script>
+    <script src="js/dividends.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/backup.js"></script>
+    <script src="js/audit.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

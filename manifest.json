@@ -1,0 +1,9 @@
+{
+    "name": "Funds Manager",
+    "short_name": "Funds Mgr",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#f5f7fa",
+    "theme_color": "#003087",
+    "icons": []
+}
