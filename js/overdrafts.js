@@ -66,7 +66,7 @@ async function issueOverdraft(event) {
             interest: interestAmount,
             totalDue: totalDue,
             reason: reason,
-            status: OVERDRAFT_STATUS.APPROVED,
+            status: OVERDRAFT_STATUS.PENDING,
             dateTaken: new Date().toISOString(),
             amountPaid: 0
         });
@@ -79,7 +79,7 @@ async function issueOverdraft(event) {
             interest: interestAmount,
             totalDue: totalDue,
             reason: reason,
-            status: OVERDRAFT_STATUS.APPROVED,
+            status: OVERDRAFT_STATUS.PENDING,
             dateTaken: new Date().toISOString(),
             amountPaid: 0
         });
