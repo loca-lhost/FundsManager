@@ -62,7 +62,7 @@ async function detectAvailableYears() {
 }
 
 function renderYearSelector() {
-    const selector = document.getElementById('yearSelector');
+    const selector = document.getElementById('yearSelector') || document.getElementById('yearFilter');
     if (!selector) return;
 
     selector.innerHTML = '';

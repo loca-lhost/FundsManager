@@ -14,6 +14,7 @@ function openAddMemberModal() {
 
 function closeMemberModal() {
     if (!checkUnsavedChanges()) return;
+    hideArchiveConfirmation();
     document.getElementById('memberModal').classList.remove('active');
 }
 
@@ -129,7 +130,7 @@ function editMember(id) {
         editingMemberId = id;
         document.getElementById('modalTitle').textContent = 'Edit Member';
 
-        if (isManager()) {
+        if (isAdmin()) {
             const archiveBtn = document.getElementById('modalArchiveBtn');
             const btnToggle = document.getElementById('btnArchiveToggle');
             const btnText = document.getElementById('archiveBtnText');
@@ -159,6 +160,90 @@ function editMember(id) {
         document.getElementById('archiveConfirmationButtons').style.display = 'none';
         document.getElementById('memberModal').classList.add('active');
         trackFormChanges('memberForm');
+    }
+}
+
+function showArchiveConfirmation() {
+    if (!editingMemberId) return;
+    if (!isAdmin()) {
+        showToast('Permission Denied', 'Only admins can archive or restore members', 'error');
+        return;
+    }
+
+    const member = membersData.find(m => m.id === editingMemberId);
+    if (!member) return;
+
+    const defaultButtons = document.getElementById('defaultModalButtons');
+    const confirmationButtons = document.getElementById('archiveConfirmationButtons');
+    const confirmMsg = document.getElementById('archiveConfirmMsg');
+    const confirmBtn = document.getElementById('btnArchiveConfirm');
+
+    if (!defaultButtons || !confirmationButtons || !confirmMsg || !confirmBtn) return;
+
+    defaultButtons.style.display = 'none';
+    confirmationButtons.style.display = 'flex';
+
+    if (member.isArchived) {
+        confirmMsg.textContent = `Restore ${member.name}?`;
+        confirmBtn.textContent = 'Restore';
+        confirmBtn.className = 'btn btn-success';
+    } else {
+        confirmMsg.textContent = `Archive ${member.name}?`;
+        confirmBtn.textContent = 'Archive';
+        confirmBtn.className = 'btn btn-danger';
+    }
+}
+
+function hideArchiveConfirmation() {
+    const defaultButtons = document.getElementById('defaultModalButtons');
+    const confirmationButtons = document.getElementById('archiveConfirmationButtons');
+    if (defaultButtons) defaultButtons.style.display = 'flex';
+    if (confirmationButtons) confirmationButtons.style.display = 'none';
+}
+
+async function confirmArchiveFromModal() {
+    if (!editingMemberId) return;
+    if (!isAdmin()) {
+        showToast('Permission Denied', 'Only admins can archive or restore members', 'error');
+        return;
+    }
+
+    const member = membersData.find(m => m.id === editingMemberId);
+    if (!member) return;
+
+    if (!member.isArchived) {
+        const hasActiveOverdraft = overdraftsData.some(od => od.memberId === editingMemberId && od.status === 'Active');
+        if (hasActiveOverdraft) {
+            showToast('Action Prevented', 'Cannot archive member with active overdrafts. Please repay them first.', 'error');
+            hideArchiveConfirmation();
+            return;
+        }
+    }
+
+    const nextArchivedState = !member.isArchived;
+
+    try {
+        await databases.updateDocument(DB_ID, 'members', editingMemberId, {
+            isArchived: nextArchivedState
+        });
+
+        member.isArchived = nextArchivedState;
+        renderTable();
+        renderOverdraftsTable();
+        updateStatistics();
+
+        if (nextArchivedState) {
+            showToast('Success', 'Member archived successfully', 'success');
+            addToAuditLog('Soft Delete', `Archived member: ${member.name}`);
+        } else {
+            showToast('Success', 'Member restored successfully', 'success');
+            addToAuditLog('Restore Member', `Restored member: ${member.name}`);
+        }
+
+        hideArchiveConfirmation();
+        closeMemberModal();
+    } catch (error) {
+        showToast('Error', `Failed to ${nextArchivedState ? 'archive' : 'restore'} member: ${error.message}`, 'error');
     }
 }
 

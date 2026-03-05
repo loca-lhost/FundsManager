@@ -1,12 +1,230 @@
 // --- BACKUP & RESTORE ---
 
+const BACKUP_ENCRYPTION_KEY = 'welfare-backup-key';
+
 function openBackupModal() {
-    document.getElementById('backupModal').classList.add('active');
+    const modal = document.getElementById('backupModal');
+    if (modal) modal.classList.add('active');
 }
 
 function closeBackupModal() {
-    document.getElementById('backupModal').classList.remove('active');
+    const modal = document.getElementById('backupModal');
+    if (modal) modal.classList.remove('active');
 }
+
+function closeCloudRestoreModal() {
+    const modal = document.getElementById('cloudRestoreModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function openCloudRestoreModal() {
+    restoreFromCloud();
+}
+
+function backupData() {
+    backupToLocal();
+}
+
+function restoreData() {
+    restoreFromLocal();
+}
+
+function buildBackupDataSnapshot() {
+    return {
+        version: '2.1',
+        timestamp: new Date().toISOString(),
+        year: currentYear,
+        members: membersData,
+        overdrafts: overdraftsData,
+        availableYears: availableYears
+    };
+}
+
+function encryptBackupJson(jsonString) {
+    return CryptoJS.AES.encrypt(jsonString, BACKUP_ENCRYPTION_KEY).toString();
+}
+
+function parseBackupContent(content) {
+    let parsedData = null;
+
+    // Attempt encrypted backup first.
+    try {
+        const decrypted = CryptoJS.AES.decrypt(content, BACKUP_ENCRYPTION_KEY);
+        const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
+        if (jsonString) {
+            parsedData = JSON.parse(jsonString);
+        }
+    } catch (e) {
+        // Ignore and try plain JSON next.
+    }
+
+    if (!parsedData) {
+        parsedData = JSON.parse(content);
+    }
+
+    return parsedData;
+}
+
+function normalizeBackupData(data) {
+    if (!data || !Array.isArray(data.members)) {
+        throw new Error('Invalid backup file format');
+    }
+
+    const parsedYear = parseInt(data.year, 10);
+    const yearToRestore = Number.isFinite(parsedYear) ? parsedYear : currentYear;
+
+    const normalizedYears = Array.isArray(data.availableYears)
+        ? data.availableYears
+            .map(y => parseInt(y, 10))
+            .filter(y => Number.isFinite(y))
+        : [];
+
+    return {
+        version: data.version || 'unknown',
+        timestamp: data.timestamp || null,
+        year: yearToRestore,
+        members: data.members,
+        overdrafts: Array.isArray(data.overdrafts) ? data.overdrafts : [],
+        availableYears: normalizedYears
+    };
+}
+
+async function deleteCollectionDocuments(collectionId) {
+    const docs = await fetchAllDocuments(collectionId);
+    for (const doc of docs) {
+        await databases.deleteDocument(DB_ID, collectionId, doc.$id);
+    }
+    return docs.length;
+}
+
+function sanitizeAccountNumber(value) {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 13);
+    return digits || '0';
+}
+
+function sanitizeMoney(value, fallback = 0) {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+async function restoreBackupDataToDatabase(rawData) {
+    const data = normalizeBackupData(rawData);
+
+    showToast('Info', 'Replacing current data...', 'info');
+
+    // Clear existing transactional data first to honor "replace all" semantics.
+    await deleteCollectionDocuments('contributions');
+    await deleteCollectionDocuments('overdrafts');
+    await deleteCollectionDocuments('members');
+
+    const memberIdMap = new Map();
+    const memberNameMap = new Map();
+    const restoredMembers = [];
+
+    for (const backupMember of data.members) {
+        const name = String(backupMember.name || '').trim();
+        if (!name) continue;
+
+        const createdMember = await databases.createDocument(DB_ID, 'members', 'unique()', {
+            name: name,
+            accountNumber: sanitizeAccountNumber(backupMember.accountNumber),
+            isArchived: !!backupMember.isArchived
+        });
+
+        const createdId = createdMember.$id;
+        const sourceId = String(backupMember.id || '');
+        if (sourceId) memberIdMap.set(sourceId, createdId);
+
+        memberNameMap.set(name.toLowerCase(), createdId);
+        restoredMembers.push({ id: createdId, name: name, sourceId: sourceId });
+    }
+
+    let restoredContributions = 0;
+
+    for (const backupMember of data.members) {
+        const sourceId = String(backupMember.id || '');
+        const memberName = String(backupMember.name || '').trim().toLowerCase();
+
+        let targetMemberId = memberIdMap.get(sourceId);
+        if (!targetMemberId && memberName) {
+            targetMemberId = memberNameMap.get(memberName);
+        }
+        if (!targetMemberId) continue;
+
+        const contributions = backupMember.contributions && typeof backupMember.contributions === 'object'
+            ? backupMember.contributions
+            : {};
+
+        for (const month of months) {
+            const amount = sanitizeMoney(contributions[month], 0);
+            if (amount <= 0) continue;
+
+            await databases.createDocument(DB_ID, 'contributions', 'unique()', {
+                memberId: targetMemberId,
+                year: data.year,
+                month: month,
+                amount: amount
+            });
+            restoredContributions++;
+        }
+    }
+
+    let restoredOverdrafts = 0;
+    let skippedOverdrafts = 0;
+
+    for (const backupOverdraft of data.overdrafts) {
+        const sourceMemberId = String(backupOverdraft.memberId || '');
+        const sourceMemberName = String(backupOverdraft.memberName || '').trim().toLowerCase();
+
+        let targetMemberId = memberIdMap.get(sourceMemberId);
+        if (!targetMemberId && sourceMemberName) {
+            targetMemberId = memberNameMap.get(sourceMemberName);
+        }
+
+        if (!targetMemberId) {
+            skippedOverdrafts++;
+            continue;
+        }
+
+        const restoredMember = restoredMembers.find(m => m.id === targetMemberId);
+        const memberName = restoredMember ? restoredMember.name : (backupOverdraft.memberName || 'Unknown Member');
+
+        await databases.createDocument(DB_ID, 'overdrafts', 'unique()', {
+            memberId: targetMemberId,
+            memberName: memberName,
+            amount: sanitizeMoney(backupOverdraft.amount, 0),
+            interest: sanitizeMoney(backupOverdraft.interest, 0),
+            totalDue: sanitizeMoney(backupOverdraft.totalDue, 0),
+            reason: backupOverdraft.reason || 'N/A',
+            status: backupOverdraft.status || 'Active',
+            dateTaken: backupOverdraft.dateTaken || new Date().toISOString(),
+            amountPaid: sanitizeMoney(backupOverdraft.amountPaid, 0)
+        });
+
+        restoredOverdrafts++;
+    }
+
+    availableYears = data.availableYears.length > 0
+        ? [...new Set(data.availableYears)]
+        : [data.year];
+
+    if (!availableYears.includes(data.year)) availableYears.push(data.year);
+    availableYears.sort((a, b) => b - a);
+    currentYear = data.year;
+
+    renderYearSelector();
+    await loadYearData(currentYear);
+
+    return {
+        year: data.year,
+        members: restoredMembers.length,
+        contributions: restoredContributions,
+        overdrafts: restoredOverdrafts,
+        skippedOverdrafts: skippedOverdrafts,
+        timestamp: data.timestamp || 'unknown'
+    };
+}
+
 async function backupToCloud() {
     if (!isManager()) {
         showToast('Permission Denied', 'Only managers can backup', 'error');
@@ -16,17 +234,9 @@ async function backupToCloud() {
     showToast('Info', 'Creating backup...', 'info');
 
     try {
-        const backupData = {
-            version: '2.0',
-            timestamp: new Date().toISOString(),
-            year: currentYear,
-            members: membersData,
-            overdrafts: overdraftsData,
-            availableYears: availableYears
-        };
-
+        const backupData = buildBackupDataSnapshot();
         const jsonString = JSON.stringify(backupData, null, 2);
-        const encrypted = CryptoJS.AES.encrypt(jsonString, 'welfare-backup-key').toString();
+        const encrypted = encryptBackupJson(jsonString);
 
         const blob = new Blob([encrypted], { type: 'application/octet-stream' });
         const file = new File([blob], `backup_${currentYear}_${Date.now()}.wbk`, { type: 'application/octet-stream' });
@@ -42,17 +252,9 @@ async function backupToCloud() {
 }
 
 function backupToLocal() {
-    const backupData = {
-        version: '2.0',
-        timestamp: new Date().toISOString(),
-        year: currentYear,
-        members: membersData,
-        overdrafts: overdraftsData,
-        availableYears: availableYears
-    };
-
+    const backupData = buildBackupDataSnapshot();
     const jsonString = JSON.stringify(backupData, null, 2);
-    const encrypted = CryptoJS.AES.encrypt(jsonString, 'welfare-backup-key').toString();
+    const encrypted = encryptBackupJson(jsonString);
 
     const blob = new Blob([encrypted], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
@@ -85,104 +287,18 @@ async function restoreFromLocal() {
         const reader = new FileReader();
         reader.onload = async function (event) {
             try {
-                let data;
-                const content = event.target.result;
+                const content = String(event.target.result || '');
+                const parsedData = parseBackupContent(content);
 
-                // Try decrypting first
-                try {
-                    const decrypted = CryptoJS.AES.decrypt(content, 'welfare-backup-key');
-                    const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
-                    data = JSON.parse(jsonString);
-                } catch (decryptError) {
-                    // If decryption fails, try plain JSON
-                    data = JSON.parse(content);
+                const result = await restoreBackupDataToDatabase(parsedData);
+                const summary = `Year ${result.year}: ${result.members} members, ${result.contributions} contributions, ${result.overdrafts} overdrafts restored`;
+
+                showToast('Success', summary, 'success');
+                if (result.skippedOverdrafts > 0) {
+                    showToast('Warning', `${result.skippedOverdrafts} overdrafts skipped due to missing member mapping`, 'warning');
                 }
 
-                if (!data.members || !Array.isArray(data.members)) {
-                    showToast('Error', 'Invalid backup file format', 'error');
-                    return;
-                }
-
-                // Restore members
-                for (const member of data.members) {
-                    try {
-                        // Check if member already exists
-                        const existing = await databases.listDocuments(DB_ID, 'members', [
-                            Appwrite.Query.equal('accountNumber', member.accountNumber)
-                        ]);
-
-                        let memberId;
-                        if (existing.documents.length > 0) {
-                            memberId = existing.documents[0].$id;
-                            await databases.updateDocument(DB_ID, 'members', memberId, {
-                                name: member.name,
-                                accountNumber: member.accountNumber,
-                                isArchived: member.isArchived || false
-                            });
-                        } else {
-                            const response = await databases.createDocument(DB_ID, 'members', 'unique()', {
-                                name: member.name,
-                                accountNumber: member.accountNumber,
-                                isArchived: member.isArchived || false
-                            });
-                            memberId = response.$id;
-                        }
-
-                        // Restore contributions
-                        if (member.contributions) {
-                            for (const month of months) {
-                                const amount = member.contributions[month] || 0;
-                                if (amount > 0) {
-                                    const contribs = await databases.listDocuments(DB_ID, 'contributions', [
-                                        Appwrite.Query.equal('memberId', memberId),
-                                        Appwrite.Query.equal('year', data.year || currentYear),
-                                        Appwrite.Query.equal('month', month)
-                                    ]);
-
-                                    if (contribs.documents.length > 0) {
-                                        await databases.updateDocument(DB_ID, 'contributions', contribs.documents[0].$id, { amount: amount });
-                                    } else {
-                                        await databases.createDocument(DB_ID, 'contributions', 'unique()', {
-                                            memberId: memberId,
-                                            year: data.year || currentYear,
-                                            month: month,
-                                            amount: amount
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.error(`Error restoring ${member.name}:`, err);
-                    }
-                }
-
-                // Restore overdrafts
-                if (data.overdrafts) {
-                    for (const od of data.overdrafts) {
-                        try {
-                            await databases.createDocument(DB_ID, 'overdrafts', 'unique()', {
-                                memberId: od.memberId,
-                                memberName: od.memberName,
-                                amount: od.amount,
-                                interest: od.interest,
-                                totalDue: od.totalDue,
-                                reason: od.reason || 'N/A',
-                                status: od.status,
-                                dateTaken: od.dateTaken,
-                                amountPaid: od.amountPaid || 0
-                            });
-                        } catch (err) {
-                            console.error(`Error restoring overdraft:`, err);
-                        }
-                    }
-                }
-
-                showToast('Success', 'Data restored successfully. Reloading...', 'success');
-                addToAuditLog('Restore', `Restored from local backup (${data.timestamp || 'unknown date'})`);
-
-                setTimeout(() => { loadYearData(data.year || currentYear); }, 1000);
-
+                addToAuditLog('Restore', `Restored from local backup (${result.timestamp})`);
             } catch (error) {
                 console.error('Restore error:', error);
                 showToast('Error', 'Failed to restore: ' + error.message, 'error');
@@ -203,7 +319,7 @@ async function restoreFromCloud() {
     try {
         const filesList = await storage.listFiles(BUCKET_ID, [
             Appwrite.Query.orderDesc('$createdAt'),
-            Appwrite.Query.limit(10)
+            Appwrite.Query.limit(20)
         ]);
 
         if (filesList.files.length === 0) {
@@ -211,43 +327,51 @@ async function restoreFromCloud() {
             return;
         }
 
-        // Show selection modal
-        let html = '<div class="backup-list-scroll">';
-        filesList.files.forEach(file => {
-            const date = new Date(file.$createdAt);
-            const size = (file.sizeOriginal / 1024).toFixed(1);
-            html += `
-                <div class="backup-list-item" 
-                     onclick="performCloudRestore('${file.$id}')">
-                    <div>
-                        <div class="font-bold">${escapeHtml(file.name)}</div>
-                        <div class="text-sm text-muted">${date.toLocaleString()} • ${size} KB</div>
-                    </div>
-                    <i class="fas fa-download text-brand"></i>
-                </div>
-            `;
-        });
-        html += '</div>';
-
-        // Use a simple modal approach
         const modal = document.getElementById('cloudRestoreModal');
+        const tableList = document.getElementById('cloudBackupList');
+        const divList = document.getElementById('cloudBackupsList');
+
+        if (tableList) {
+            let rows = '';
+            filesList.files.forEach(file => {
+                const date = new Date(file.$createdAt);
+                const size = (file.sizeOriginal / 1024).toFixed(1);
+                rows += `
+                    <tr>
+                        <td>
+                            <div class="font-bold">${escapeHtml(file.name)}</div>
+                            <div class="text-sm text-muted">${date.toLocaleString()} - ${size} KB</div>
+                        </td>
+                        <td class="text-right">
+                            <button class="btn btn-primary btn-sm" onclick="performCloudRestore('${file.$id}')" title="Restore">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableList.innerHTML = rows;
+        } else if (divList) {
+            let html = '<div class="backup-list-scroll">';
+            filesList.files.forEach(file => {
+                const date = new Date(file.$createdAt);
+                const size = (file.sizeOriginal / 1024).toFixed(1);
+                html += `
+                    <div class="backup-list-item" onclick="performCloudRestore('${file.$id}')">
+                        <div>
+                            <div class="font-bold">${escapeHtml(file.name)}</div>
+                            <div class="text-sm text-muted">${date.toLocaleString()} - ${size} KB</div>
+                        </div>
+                        <i class="fas fa-download text-brand"></i>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            divList.innerHTML = html;
+        }
+
         if (modal) {
-            document.getElementById('cloudBackupsList').innerHTML = html;
             modal.classList.add('active');
-        } else {
-            // Create temporary modal
-            const tempModal = document.createElement('div');
-            tempModal.className = 'modal active';
-            tempModal.id = 'cloudRestoreModal';
-            tempModal.innerHTML = `
-                <div class="modal-content">
-                    <button class="close-modal" onclick="this.closest('.modal').remove()">&times;</button>
-                    <h3 class="mb-md">Cloud Backups</h3>
-                    <div id="cloudBackupsList">${html}</div>
-                </div>
-            `;
-            tempModal.onclick = function (e) { if (e.target === this) this.remove(); };
-            document.body.appendChild(tempModal);
         }
     } catch (error) {
         showToast('Error', 'Failed to list backups: ' + error.message, 'error');
@@ -260,32 +384,22 @@ async function performCloudRestore(fileId) {
     showToast('Info', 'Restoring backup...', 'info');
 
     try {
-        const result = await storage.getFileDownload(BUCKET_ID, fileId);
-        const response = await fetch(result);
+        const downloadUrl = await storage.getFileDownload(BUCKET_ID, fileId);
+        const response = await fetch(downloadUrl);
         const content = await response.text();
 
-        const decrypted = CryptoJS.AES.decrypt(content, 'welfare-backup-key');
-        const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
-        const data = JSON.parse(jsonString);
+        const parsedData = parseBackupContent(content);
+        const result = await restoreBackupDataToDatabase(parsedData);
 
-        if (!data.members) {
-            showToast('Error', 'Invalid backup format', 'error');
-            return;
+        const summary = `Year ${result.year}: ${result.members} members, ${result.contributions} contributions, ${result.overdrafts} overdrafts restored`;
+        showToast('Success', summary, 'success');
+
+        if (result.skippedOverdrafts > 0) {
+            showToast('Warning', `${result.skippedOverdrafts} overdrafts skipped due to missing member mapping`, 'warning');
         }
 
-        membersData = data.members;
-        overdraftsData = data.overdrafts || [];
-
-        renderTable();
-        renderOverdraftsTable();
-        updateStatistics();
-
-        showToast('Success', 'Backup restored successfully', 'success');
-        addToAuditLog('Restore', `Restored from cloud backup (${data.timestamp || 'unknown'})`);
-
-        // Close modal
-        const modal = document.getElementById('cloudRestoreModal');
-        if (modal) modal.classList.remove('active');
+        addToAuditLog('Restore', `Restored from cloud backup (${result.timestamp})`);
+        closeCloudRestoreModal();
     } catch (error) {
         showToast('Error', 'Restore failed: ' + error.message, 'error');
     }
