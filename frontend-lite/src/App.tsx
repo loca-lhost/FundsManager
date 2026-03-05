@@ -1,5 +1,11 @@
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import FundsManagerApp from "@/components/FundsManagerApp";
 
 export default function App() {
-  return <FundsManagerApp />;
+  return (
+    <>
+      <FundsManagerApp />
+      <SpeedInsights />
+    </>
+  );
 }
