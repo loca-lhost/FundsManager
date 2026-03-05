@@ -12,15 +12,6 @@ function closeBackupModal() {
     if (modal) modal.classList.remove('active');
 }
 
-function closeCloudRestoreModal() {
-    const modal = document.getElementById('cloudRestoreModal');
-    if (modal) modal.classList.remove('active');
-}
-
-function openCloudRestoreModal() {
-    restoreFromCloud();
-}
-
 function backupData() {
     backupToLocal();
 }
@@ -233,32 +224,6 @@ async function restoreBackupDataToDatabase(rawData) {
     };
 }
 
-async function backupToCloud() {
-    if (!isManager()) {
-        showToast('Permission Denied', 'Only managers can backup', 'error');
-        return;
-    }
-
-    showToast('Info', 'Creating backup...', 'info');
-
-    try {
-        const backupData = buildBackupDataSnapshot();
-        const jsonString = JSON.stringify(backupData, null, 2);
-        const encrypted = encryptBackupJson(jsonString);
-
-        const blob = new Blob([encrypted], { type: 'application/octet-stream' });
-        const file = new File([blob], `backup_${currentYear}_${Date.now()}.wbk`, { type: 'application/octet-stream' });
-
-        await storage.createFile(BUCKET_ID, 'unique()', file);
-
-        showToast('Success', 'Backup saved to cloud', 'success');
-        addToAuditLog('Backup', `Cloud backup created for ${currentYear}`);
-    } catch (error) {
-        console.error('Backup error:', error);
-        showToast('Error', 'Backup failed: ' + error.message, 'error');
-    }
-}
-
 function backupToLocal() {
     const backupData = buildBackupDataSnapshot();
     const jsonString = JSON.stringify(backupData, null, 2);
@@ -316,99 +281,4 @@ async function restoreFromLocal() {
     };
 
     input.click();
-}
-
-async function restoreFromCloud() {
-    if (!isAdmin()) {
-        showToast('Permission Denied', 'Only admins can restore', 'error');
-        return;
-    }
-
-    try {
-        const filesList = await storage.listFiles(BUCKET_ID, [
-            Appwrite.Query.orderDesc('$createdAt'),
-            Appwrite.Query.limit(20)
-        ]);
-
-        if (filesList.files.length === 0) {
-            showToast('Info', 'No cloud backups found', 'info');
-            return;
-        }
-
-        const modal = document.getElementById('cloudRestoreModal');
-        const tableList = document.getElementById('cloudBackupList');
-        const divList = document.getElementById('cloudBackupsList');
-
-        if (tableList) {
-            let rows = '';
-            filesList.files.forEach(file => {
-                const date = new Date(file.$createdAt);
-                const size = (file.sizeOriginal / 1024).toFixed(1);
-                rows += `
-                    <tr>
-                        <td>
-                            <div class="font-bold">${escapeHtml(file.name)}</div>
-                            <div class="text-sm text-muted">${date.toLocaleString()} - ${size} KB</div>
-                        </td>
-                        <td class="text-right">
-                            <button class="btn btn-primary btn-sm" onclick="performCloudRestore('${file.$id}')" title="Restore">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            tableList.innerHTML = rows;
-        } else if (divList) {
-            let html = '<div class="backup-list-scroll">';
-            filesList.files.forEach(file => {
-                const date = new Date(file.$createdAt);
-                const size = (file.sizeOriginal / 1024).toFixed(1);
-                html += `
-                    <div class="backup-list-item" onclick="performCloudRestore('${file.$id}')">
-                        <div>
-                            <div class="font-bold">${escapeHtml(file.name)}</div>
-                            <div class="text-sm text-muted">${date.toLocaleString()} - ${size} KB</div>
-                        </div>
-                        <i class="fas fa-download text-brand"></i>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            divList.innerHTML = html;
-        }
-
-        if (modal) {
-            modal.classList.add('active');
-        }
-    } catch (error) {
-        showToast('Error', 'Failed to list backups: ' + error.message, 'error');
-    }
-}
-
-async function performCloudRestore(fileId) {
-    if (!confirm('This will replace current data. Are you sure?')) return;
-
-    showToast('Info', 'Restoring backup...', 'info');
-
-    try {
-        const downloadUrl = await storage.getFileDownload(BUCKET_ID, fileId);
-        const response = await fetch(downloadUrl);
-        const content = await response.text();
-
-        const parsedData = parseBackupContent(content);
-        const result = await restoreBackupDataToDatabase(parsedData);
-
-        const summary = `Year ${result.year}: ${result.members} members, ${result.contributions} contributions, ${result.overdrafts} overdrafts restored`;
-        showToast('Success', summary, 'success');
-
-        if (result.skippedOverdrafts > 0) {
-            showToast('Warning', `${result.skippedOverdrafts} overdrafts skipped due to missing member mapping`, 'warning');
-        }
-
-        addToAuditLog('Restore', `Restored from cloud backup (${result.timestamp})`);
-        closeCloudRestoreModal();
-    } catch (error) {
-        showToast('Error', 'Restore failed: ' + error.message, 'error');
-    }
 }

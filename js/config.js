@@ -6,12 +6,10 @@ client
 
 const account = new Appwrite.Account(client);
 const databases = new Appwrite.Databases(client);
-const storage = new Appwrite.Storage(client);
 const teams = new Appwrite.Teams(client);
 
 // Database Constants
 const DB_ID = 'welfare_db'; // Create this database in Appwrite Console
-const BUCKET_ID = 'backups'; // Ensure this bucket exists in Appwrite Storage
 // Note: Ensure collections 'members', 'contributions', 'overdrafts', 'audit_logs', 'profiles' exist
 
 // Security Configuration

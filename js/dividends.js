@@ -184,9 +184,9 @@ function printDividendReport() {
                 .close-modal, .no-print, button { display: none !important; }
                 table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
                 th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
-                th { background: #f8fafc; font-weight: 700; color: #003087; }
+                th { background: #f8fafc; font-weight: 700; color: #002c63; }
                 .amount-cell { text-align: right; font-family: monospace; }
-                h3 { color: #003087; }
+                h3 { color: #002c63; }
                 @page { size: portrait; margin: 1.5cm; }
             </style>
         </head>

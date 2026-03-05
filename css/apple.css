@@ -1,10 +1,10 @@
 /* Apple-style visual override layer */
 
 :root {
-    --brand-blue: #0a84ff;
-    --brand-light-blue: #5ac8fa;
-    --brand-accent: #0a84ff;
-    --brand-dark: #1d1d1f;
+    --brand-blue: #002c63;
+    --brand-light-blue: #004e96;
+    --brand-accent: #005daa;
+    --brand-dark: #001b45;
     --brand-white: #ffffff;
     --brand-gray: #f5f5f7;
     --brand-text: #1d1d1f;
@@ -16,8 +16,8 @@
 
     --theme-text-primary: #1d1d1f;
     --theme-text-secondary: #6e6e73;
-    --theme-bg-radial-a: rgba(90, 200, 250, 0.16);
-    --theme-bg-radial-b: rgba(10, 132, 255, 0.18);
+    --theme-bg-radial-a: rgba(0, 93, 170, 0.16);
+    --theme-bg-radial-b: rgba(0, 44, 99, 0.18);
     --theme-bg-linear-start: #f7f8fb;
     --theme-bg-linear-mid: #f2f3f7;
     --theme-bg-linear-end: #eceef4;
@@ -40,18 +40,18 @@
     --theme-table-head-bg: linear-gradient(180deg, #f8f9fd 0%, #edf1f8 100%);
     --theme-table-head-text: #1d1d1f;
     --theme-row-even: #fbfcff;
-    --theme-row-hover: rgba(10, 132, 255, 0.08);
+    --theme-row-hover: rgba(0, 44, 99, 0.08);
 
     --theme-modal-backdrop: rgba(22, 22, 24, 0.38);
     --theme-close-color: #5d5d62;
     --theme-close-hover: rgba(120, 120, 128, 0.12);
 
-    --theme-dropdown-hover: rgba(10, 132, 255, 0.1);
+    --theme-dropdown-hover: rgba(0, 44, 99, 0.1);
     --theme-bottom-nav-bg: rgba(255, 255, 255, 0.92);
     --theme-toast-bg: rgba(255, 255, 255, 0.92);
     --theme-toast-border: rgba(210, 210, 215, 0.9);
 
-    --theme-login-radial: rgba(90, 200, 250, 0.2);
+    --theme-login-radial: rgba(0, 93, 170, 0.18);
     --theme-login-start: #eef2f9;
     --theme-login-mid: #e8edf6;
     --theme-login-end: #dfe5ef;
@@ -89,14 +89,14 @@ textarea {
 }
 
 .header::before {
-    background: linear-gradient(90deg, transparent, rgba(10, 132, 255, 0.12));
+    background: linear-gradient(90deg, transparent, rgba(0, 44, 99, 0.14));
 }
 
 .logo,
 .login-logo {
-    background: linear-gradient(160deg, #0a84ff 0%, #5ac8fa 100%);
+    background: linear-gradient(160deg, #004e96 0%, #002c63 100%);
     border-radius: 18px;
-    box-shadow: 0 8px 20px rgba(10, 132, 255, 0.28);
+    box-shadow: 0 8px 20px rgba(0, 44, 99, 0.3);
     text-shadow: none;
 }
 
@@ -145,7 +145,7 @@ textarea {
 }
 
 .profile-avatar {
-    background: #0a84ff;
+    background: #002c63;
     color: #ffffff;
 }
 
@@ -179,8 +179,8 @@ textarea {
 }
 
 .tab-btn.active {
-    color: #0a84ff;
-    border-bottom-color: #0a84ff;
+    color: #002c63;
+    border-bottom-color: #002c63;
 }
 
 .search-box input,
@@ -202,8 +202,8 @@ textarea {
 .form-input:focus,
 .form-select:focus,
 .cell-input:focus {
-    border-color: rgba(10, 132, 255, 0.9);
-    box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.14);
+    border-color: rgba(0, 44, 99, 0.85);
+    box-shadow: 0 0 0 4px rgba(0, 44, 99, 0.16);
 }
 
 .btn {
@@ -218,14 +218,14 @@ textarea {
 }
 
 .btn-primary {
-    background: linear-gradient(160deg, #0a84ff 0%, #0071e3 100%);
-    border-color: rgba(0, 113, 227, 0.75);
-    box-shadow: 0 10px 20px rgba(10, 132, 255, 0.28);
+    background: linear-gradient(160deg, #004e96 0%, #002c63 100%);
+    border-color: rgba(0, 44, 99, 0.8);
+    box-shadow: 0 10px 20px rgba(0, 44, 99, 0.3);
 }
 
 .btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 22px rgba(10, 132, 255, 0.32);
+    box-shadow: 0 12px 22px rgba(0, 44, 99, 0.36);
 }
 
 .btn-secondary {
@@ -352,16 +352,16 @@ tbody tr:hover td:first-child {
 }
 
 .bottom-nav-item.active {
-    color: #0a84ff;
+    color: #002c63;
 }
 
 .bottom-nav-item.active::after {
-    background: #0a84ff;
+    background: #002c63;
 }
 
 .fab-main {
-    background: linear-gradient(160deg, #0a84ff 0%, #0071e3 100%);
-    box-shadow: 0 14px 26px rgba(10, 132, 255, 0.34);
+    background: linear-gradient(160deg, #004e96 0%, #002c63 100%);
+    box-shadow: 0 14px 26px rgba(0, 44, 99, 0.36);
 }
 
 .toast {

@@ -137,7 +137,7 @@ function setFavicon() {
     const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
     link.type = 'image/svg+xml';
     link.rel = 'icon';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#0057B8;stop-opacity:1" /><stop offset="100%" style="stop-color:#003087;stop-opacity:1" /></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#grad)"/><text x="50" y="50" font-family="Arial, sans-serif" font-size="65" fill="white" text-anchor="middle" dy=".35em" font-weight="800">₵</text></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#004E96;stop-opacity:1" /><stop offset="100%" style="stop-color:#002C63;stop-opacity:1" /></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#grad)"/><text x="50" y="50" font-family="Arial, sans-serif" font-size="65" fill="white" text-anchor="middle" dy=".35em" font-weight="800">₵</text></svg>`;
     link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
     document.getElementsByTagName('head')[0].appendChild(link);
 }

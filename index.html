@@ -10,14 +10,14 @@
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self' https://cloud.appwrite.io wss://cloud.appwrite.io https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.sheetjs.com;">
     <title>Funds Manager</title>
-    <meta name="theme-color" content="#003087">
+    <meta name="theme-color" content="#002C63">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <!-- Favicon -->
     <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%230057B8;stop-opacity:1%22 /><stop offset=%22100%25%22 style=%22stop-color:%23003087;stop-opacity:1%22 /></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22url(%23grad)%22/><text x=%2250%22 y=%2250%22 font-family=%22Arial, sans-serif%22 font-size=%2265%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.35em%22 font-weight=%22800%22>&#x20B5;</text></svg>">
-    <link rel="manifest" href="manifest.json?v=20260305.11">
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%23004E96;stop-opacity:1%22 /><stop offset=%22100%25%22 style=%22stop-color:%23002C63;stop-opacity:1%22 /></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22url(%23grad)%22/><text x=%2250%22 y=%2250%22 font-family=%22Arial, sans-serif%22 font-size=%2265%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.35em%22 font-weight=%22800%22>&#x20B5;</text></svg>">
+    <link rel="manifest" href="manifest.json?v=20260305.13">
 
     <!-- Ant Design CSS -->
     <link href="https://cdn.jsdelivr.net/npm/antd@5.12.5/dist/reset.css" rel="stylesheet">
@@ -47,13 +47,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 
     <!-- Application CSS -->
-    <link rel="stylesheet" href="css/variables.css?v=20260305.11">
-    <link rel="stylesheet" href="css/base.css?v=20260305.11">
-    <link rel="stylesheet" href="css/layout.css?v=20260305.11">
-    <link rel="stylesheet" href="css/components.css?v=20260305.11">
-    <link rel="stylesheet" href="css/pages.css?v=20260305.11">
-    <link rel="stylesheet" href="css/responsive.css?v=20260305.11">
-    <link rel="stylesheet" href="css/apple.css?v=20260305.11">
+    <link rel="stylesheet" href="css/variables.css?v=20260305.13">
+    <link rel="stylesheet" href="css/base.css?v=20260305.13">
+    <link rel="stylesheet" href="css/layout.css?v=20260305.13">
+    <link rel="stylesheet" href="css/components.css?v=20260305.13">
+    <link rel="stylesheet" href="css/pages.css?v=20260305.13">
+    <link rel="stylesheet" href="css/responsive.css?v=20260305.13">
+    <link rel="stylesheet" href="css/apple.css?v=20260305.13">
 
 </head>
 
@@ -465,33 +465,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Cloud Restore Modal -->
-    <div class="modal" id="cloudRestoreModal">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Cloud Backups</h3>
-                <button class="close-modal" onclick="closeCloudRestoreModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
-                <table style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Backup Details</th>
-                            <th style="width: 60px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="cloudBackupList">
-                        <tr>
-                            <td colspan="2" style="text-align:center;">Loading...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 
@@ -949,22 +922,7 @@
                 <div
                     style="background: var(--theme-surface-strong); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--theme-surface-border);">
                     <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
-                        <i class="fas fa-cloud-upload-alt"
-                            style="color: var(--brand-blue); margin-right: 0.5rem;"></i>Cloud Backup
-                    </h4>
-                    <div style="display: flex; gap: 0.75rem;">
-                        <button class="btn btn-primary" onclick="backupToCloud()" style="flex: 1;">
-                            <i class="fas fa-upload"></i> Backup
-                        </button>
-                        <button class="btn btn-secondary" onclick="restoreFromCloud()" style="flex: 1;">
-                            <i class="fas fa-download"></i> Restore
-                        </button>
-                    </div>
-                </div>
-                <div
-                    style="background: var(--theme-surface-strong); padding: 1.25rem; border-radius: 12px; border: 1px solid var(--theme-surface-border);">
-                    <h4 style="margin-bottom: 1rem; color: var(--brand-dark); font-size: 0.95rem;">
-                        <i class="fas fa-hdd" style="color: var(--theme-text-secondary); margin-right: 0.5rem;"></i>Local Backup
+                        <i class="fas fa-hdd" style="color: var(--theme-text-secondary); margin-right: 0.5rem;"></i>Backup File
                     </h4>
                     <div style="display: flex; gap: 0.75rem;">
                         <button class="btn btn-primary" onclick="backupToLocal()" style="flex: 1;">
@@ -998,20 +956,20 @@
     </div>
 
     <!-- Application JS (load order matters: config > state > utils > domain > UI > app) -->
-    <script src="js/config.js?v=20260305.11"></script>
-    <script src="js/state.js?v=20260305.11"></script>
-    <script src="js/utils.js?v=20260305.11"></script>
-    <script src="js/auth.js?v=20260305.11"></script>
-    <script src="js/settings.js?v=20260305.11"></script>
-    <script src="js/members.js?v=20260305.11"></script>
-    <script src="js/contributions.js?v=20260305.11"></script>
-    <script src="js/overdrafts.js?v=20260305.11"></script>
-    <script src="js/dividends.js?v=20260305.11"></script>
-    <script src="js/export.js?v=20260305.11"></script>
-    <script src="js/backup.js?v=20260305.11"></script>
-    <script src="js/audit.js?v=20260305.11"></script>
-    <script src="js/ui.js?v=20260305.11"></script>
-    <script src="js/app.js?v=20260305.11"></script>
+    <script src="js/config.js?v=20260305.13"></script>
+    <script src="js/state.js?v=20260305.13"></script>
+    <script src="js/utils.js?v=20260305.13"></script>
+    <script src="js/auth.js?v=20260305.13"></script>
+    <script src="js/settings.js?v=20260305.13"></script>
+    <script src="js/members.js?v=20260305.13"></script>
+    <script src="js/contributions.js?v=20260305.13"></script>
+    <script src="js/overdrafts.js?v=20260305.13"></script>
+    <script src="js/dividends.js?v=20260305.13"></script>
+    <script src="js/export.js?v=20260305.13"></script>
+    <script src="js/backup.js?v=20260305.13"></script>
+    <script src="js/audit.js?v=20260305.13"></script>
+    <script src="js/ui.js?v=20260305.13"></script>
+    <script src="js/app.js?v=20260305.13"></script>
 </body>
 
 </html>

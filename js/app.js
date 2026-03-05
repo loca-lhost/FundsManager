@@ -1,5 +1,5 @@
 // --- APP INITIALIZATION & DATA LOADING ---
-const APP_BUILD = '2026-03-05.11';
+const APP_BUILD = '2026-03-05.13';
 
 async function initializeData() {
     setFavicon();

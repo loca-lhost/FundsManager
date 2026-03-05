@@ -630,7 +630,7 @@ function printMemberProfile() {
             <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
             <style>
-                :root { --brand-blue: #003087; }
+                :root { --brand-blue: #002c63; }
                 body { font-family: 'Inter', sans-serif; padding: 40px; padding-bottom: 60px; color: #1e293b; }
                 .report-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; border-bottom: 3px solid var(--brand-blue); padding-bottom: 20px; }
                 .header-left { display: flex; align-items: center; gap: 20px; }
