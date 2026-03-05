@@ -437,6 +437,16 @@ tbody tr:hover td:first-child {
     color: #8a5700;
 }
 
+.status-rejected {
+    background: rgba(255, 69, 58, 0.2);
+    color: #a20d05;
+}
+
+:root[data-theme='dark'] .status-rejected {
+    background: rgba(255, 69, 58, 0.26);
+    color: #ffc2bd;
+}
+
 .login-container {
     background:
         radial-gradient(780px 340px at 50% -20%, var(--theme-login-radial), transparent 72%),

@@ -196,7 +196,7 @@ async function restoreBackupDataToDatabase(rawData) {
             interest: sanitizeMoney(backupOverdraft.interest, 0),
             totalDue: sanitizeMoney(backupOverdraft.totalDue, 0),
             reason: backupOverdraft.reason || 'N/A',
-            status: backupOverdraft.status || 'Active',
+            status: normalizeOverdraftStatus(backupOverdraft.status || OVERDRAFT_STATUS.APPROVED),
             dateTaken: backupOverdraft.dateTaken || new Date().toISOString(),
             amountPaid: sanitizeMoney(backupOverdraft.amountPaid, 0)
         });

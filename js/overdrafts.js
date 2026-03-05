@@ -1,5 +1,12 @@
 // --- OVERDRAFTS ---
 
+function getOverdraftStatusClass(status) {
+    const normalized = normalizeOverdraftStatus(status);
+    if (normalized === OVERDRAFT_STATUS.SETTLED) return 'status-paid';
+    if (normalized === OVERDRAFT_STATUS.REJECTED) return 'status-rejected';
+    return 'status-pending';
+}
+
 function openIssueOverdraftModal() {
     if (!isManager()) {
         showToast('Permission Denied', 'Only managers can issue overdrafts', 'error');
@@ -59,7 +66,7 @@ async function issueOverdraft(event) {
             interest: interestAmount,
             totalDue: totalDue,
             reason: reason,
-            status: 'Active',
+            status: OVERDRAFT_STATUS.APPROVED,
             dateTaken: new Date().toISOString(),
             amountPaid: 0
         });
@@ -72,7 +79,7 @@ async function issueOverdraft(event) {
             interest: interestAmount,
             totalDue: totalDue,
             reason: reason,
-            status: 'Active',
+            status: OVERDRAFT_STATUS.APPROVED,
             dateTaken: new Date().toISOString(),
             amountPaid: 0
         });
@@ -90,6 +97,10 @@ function openRepayOverdraftModal(overdraftId) {
     if (!isManager()) return;
     const od = overdraftsData.find(o => o.id === overdraftId);
     if (!od) return;
+    if (!isOpenOverdraftStatus(od.status)) {
+        showToast('Action Not Allowed', 'Only pending or approved overdrafts can be repaid', 'warning');
+        return;
+    }
 
     const remaining = od.totalDue - (od.amountPaid || 0);
     document.getElementById('repayOverdraftId').value = overdraftId;
@@ -116,6 +127,10 @@ async function repayOverdraft(event) {
 
     const od = overdraftsData.find(o => o.id === odId);
     if (!od) return;
+    if (!isOpenOverdraftStatus(od.status)) {
+        showToast('Error', 'This overdraft is not in a repayable status', 'error');
+        return;
+    }
 
     const remaining = od.totalDue - (od.amountPaid || 0);
 
@@ -129,7 +144,9 @@ async function repayOverdraft(event) {
     }
 
     const newPaid = (od.amountPaid || 0) + repayAmt;
-    const newStatus = newPaid >= od.totalDue ? 'Paid' : 'Active';
+    const newStatus = newPaid >= od.totalDue
+        ? OVERDRAFT_STATUS.SETTLED
+        : OVERDRAFT_STATUS.APPROVED;
 
     try {
         await databases.updateDocument(DB_ID, 'overdrafts', odId, {
@@ -141,7 +158,10 @@ async function repayOverdraft(event) {
         od.status = newStatus;
 
         showToast('Success', `Payment of ${formatCurrency(repayAmt)} recorded`, 'success');
-        addToAuditLog('Repay Overdraft', `${od.memberName}: Paid ${formatCurrency(repayAmt)}. ${newStatus === 'Paid' ? 'FULLY REPAID' : `Remaining: ${formatCurrency(od.totalDue - newPaid)}`}`);
+        addToAuditLog(
+            'Repay Overdraft',
+            `${od.memberName}: Paid ${formatCurrency(repayAmt)}. ${newStatus === OVERDRAFT_STATUS.SETTLED ? 'FULLY REPAID' : `Remaining: ${formatCurrency(od.totalDue - newPaid)}`}`
+        );
         renderOverdraftsTable();
         closeRepayOverdraftModal();
     } catch (e) {
@@ -172,8 +192,10 @@ function renderOverdraftsTable() {
     }
 
     const sortedData = [...overdraftsData].sort((a, b) => {
-        if (a.status === 'Active' && b.status !== 'Active') return -1;
-        if (a.status !== 'Active' && b.status === 'Active') return 1;
+        const aIsOpen = isOpenOverdraftStatus(a.status);
+        const bIsOpen = isOpenOverdraftStatus(b.status);
+        if (aIsOpen && !bIsOpen) return -1;
+        if (!aIsOpen && bIsOpen) return 1;
         return new Date(b.dateTaken) - new Date(a.dateTaken);
     });
 
@@ -206,6 +228,9 @@ function renderOverdraftsTable() {
         const progress = od.totalDue > 0 ? ((od.amountPaid || 0) / od.totalDue * 100).toFixed(0) : 0;
         const dateTaken = new Date(od.dateTaken);
         const isMgr = isManager();
+        const statusText = formatOverdraftStatus(od.status);
+        const statusClass = getOverdraftStatusClass(od.status);
+        const isOpen = isOpenOverdraftStatus(od.status);
 
         row.innerHTML = `
             <td data-label="Member" class="font-bold">${escapeHtml(od.memberName)}</td>
@@ -215,15 +240,15 @@ function renderOverdraftsTable() {
             <td data-label="Paid" class="amount-cell text-success">${formatCurrency(od.amountPaid || 0)}</td>
             <td data-label="Date" class="text-sm">${dateTaken.toLocaleDateString()}</td>
             <td data-label="Status">
-                <span class="status-badge ${od.status === 'Active' ? 'status-pending' : 'status-paid'}">${od.status}</span>
-                ${od.status === 'Active' ? `
+                <span class="status-badge ${statusClass}">${statusText}</span>
+                ${isOpen ? `
                     <div class="progress-track">
                         <div class="progress-fill" style="width: ${progress}%;"></div>
                     </div>
                 ` : ''}
             </td>
             <td data-label="Action">
-                ${od.status === 'Active' && isMgr ? `<button class="btn btn-success btn-sm" onclick="openRepayOverdraftModal('${od.id}')"><i class="fas fa-money-bill-wave"></i> <span class="btn-text">Repay</span></button>` : ''}
+                ${isOpen && isMgr ? `<button class="btn btn-success btn-sm" onclick="openRepayOverdraftModal('${od.id}')"><i class="fas fa-money-bill-wave"></i> <span class="btn-text">Repay</span></button>` : ''}
             </td>
         `;
         tbody.appendChild(row);

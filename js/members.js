@@ -212,7 +212,7 @@ async function confirmArchiveFromModal() {
     if (!member) return;
 
     if (!member.isArchived) {
-        const hasActiveOverdraft = overdraftsData.some(od => od.memberId === editingMemberId && od.status === 'Active');
+        const hasActiveOverdraft = overdraftsData.some(od => od.memberId === editingMemberId && isOpenOverdraftStatus(od.status));
         if (hasActiveOverdraft) {
             showToast('Action Prevented', 'Cannot archive member with active overdrafts. Please repay them first.', 'error');
             hideArchiveConfirmation();
@@ -365,7 +365,7 @@ async function confirmDelete() {
         const member = membersData.find(m => m.id === memberToDeleteId);
         const memberName = member ? member.name : 'Unknown';
 
-        const hasActiveOverdraft = overdraftsData.some(od => od.memberId === memberToDeleteId && od.status === 'Active');
+        const hasActiveOverdraft = overdraftsData.some(od => od.memberId === memberToDeleteId && isOpenOverdraftStatus(od.status));
         if (hasActiveOverdraft) {
             showToast('Action Prevented', 'Cannot archive member with active overdrafts. Please repay them first.', 'error');
             closeDeleteModal();

@@ -136,7 +136,7 @@ async function loadYearData(year, silent = false) {
             interest: doc.interest,
             totalDue: doc.totalDue,
             reason: doc.reason || 'N/A',
-            status: doc.status,
+            status: normalizeOverdraftStatus(doc.status),
             dateTaken: doc.dateTaken,
             amountPaid: doc.amountPaid || 0
         }));

@@ -602,6 +602,11 @@ tbody tr:nth-child(even) td:first-child {
     color: #8a5700;
 }
 
+.status-rejected {
+    background: rgba(245, 34, 45, 0.15);
+    color: var(--brand-error);
+}
+
 /* ---- Floating Action Button ---- */
 .fab-container {
     position: fixed;

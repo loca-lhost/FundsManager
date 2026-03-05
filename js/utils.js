@@ -97,6 +97,37 @@ function formatAccountNumber(number) {
     return numStr;
 }
 
+// Overdraft status helpers
+const OVERDRAFT_STATUS = {
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
+    SETTLED: 'settled'
+};
+
+function normalizeOverdraftStatus(status) {
+    const normalized = String(status || '').trim().toLowerCase();
+
+    if (normalized === 'active') return OVERDRAFT_STATUS.APPROVED;
+    if (normalized === 'paid') return OVERDRAFT_STATUS.SETTLED;
+
+    if (Object.values(OVERDRAFT_STATUS).includes(normalized)) {
+        return normalized;
+    }
+
+    return OVERDRAFT_STATUS.PENDING;
+}
+
+function isOpenOverdraftStatus(status) {
+    const normalized = normalizeOverdraftStatus(status);
+    return normalized === OVERDRAFT_STATUS.PENDING || normalized === OVERDRAFT_STATUS.APPROVED;
+}
+
+function formatOverdraftStatus(status) {
+    const normalized = normalizeOverdraftStatus(status);
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 // Calculate member total
 function calculateMemberTotal(member) {
     return months.reduce((sum, month) => sum + (member.contributions[month] || 0), 0);
