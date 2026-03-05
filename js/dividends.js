@@ -1,15 +1,26 @@
 // --- DIVIDENDS ---
 
+function getDividendPoolBreakdown() {
+    const overdraftInterest = overdraftsData.reduce((sum, od) => sum + (od.interest || 0), 0);
+    const broughtForwardInput = document.getElementById('dividendBroughtForward');
+    const monthlyInterestInput = document.getElementById('dividendMonthlyInterest');
+    const broughtForward = parseFloat(broughtForwardInput?.value) || 0;
+    const monthlyInterest = parseFloat(monthlyInterestInput?.value) || 0;
+    const totalPool = overdraftInterest + broughtForward + monthlyInterest;
+
+    return { overdraftInterest, broughtForward, monthlyInterest, totalPool };
+}
+
 function openDividendModal() {
     if (!isManager()) {
         showToast('Permission Denied', 'Only managers can calculate dividends', 'error');
         return;
     }
-    // Populate system overdraft interest
-    const odInterest = overdraftsData.reduce((sum, od) => sum + (od.interest || 0), 0);
-    document.getElementById('systemOverdraftInterest').value = formatCurrency(odInterest);
-    document.getElementById('manualSavingsInterest').value = '';
-    document.getElementById('totalInterestInput').value = formatCurrency(odInterest);
+    const { overdraftInterest } = getDividendPoolBreakdown();
+    document.getElementById('systemOverdraftInterest').value = formatCurrency(overdraftInterest);
+    document.getElementById('dividendBroughtForward').value = '';
+    document.getElementById('dividendMonthlyInterest').value = '';
+    document.getElementById('totalInterestInput').value = formatCurrency(overdraftInterest);
     document.getElementById('dividendResults').style.display = 'none';
     document.getElementById('dividendModal').classList.add('active');
 }
@@ -19,10 +30,8 @@ function closeDividendModal() {
 }
 
 function updateTotalDividend() {
-    const odInterest = overdraftsData.reduce((sum, od) => sum + (od.interest || 0), 0);
-    const savingsInterest = parseFloat(document.getElementById('manualSavingsInterest').value) || 0;
-    const total = odInterest + savingsInterest;
-    document.getElementById('totalInterestInput').value = formatCurrency(total);
+    const { totalPool } = getDividendPoolBreakdown();
+    document.getElementById('totalInterestInput').value = formatCurrency(totalPool);
 }
 
 function calculateDividends() {
@@ -32,11 +41,9 @@ function calculateDividends() {
         return;
     }
 
-    const odInterest = overdraftsData.reduce((sum, od) => sum + (od.interest || 0), 0);
-    const savingsInterest = parseFloat(document.getElementById('manualSavingsInterest').value) || 0;
-    const totalDividend = odInterest + savingsInterest;
+    const { totalPool } = getDividendPoolBreakdown();
 
-    if (totalDividend <= 0) {
+    if (totalPool <= 0) {
         showToast('Error', 'Total dividend must be greater than zero', 'error');
         return;
     }
@@ -67,7 +74,7 @@ function calculateDividends() {
         .sort((a, b) => b.totalContrib - a.totalContrib)
         .forEach(({ member, totalContrib, weightedContrib }) => {
             const sharePercent = totalWeightedContrib > 0 ? (weightedContrib / totalWeightedContrib) * 100 : 0;
-            const dividend = totalWeightedContrib > 0 ? (weightedContrib / totalWeightedContrib) * totalDividend : 0;
+            const dividend = totalWeightedContrib > 0 ? (weightedContrib / totalWeightedContrib) * totalPool : 0;
             const totalPayout = totalContrib + dividend;
 
             const row = document.createElement('tr');
@@ -88,18 +95,18 @@ function saveDividendToHistory() {
     if (!isManager()) return;
 
     const activeMembers = membersData.filter(m => !m.isArchived);
-    const odInterest = overdraftsData.reduce((sum, od) => sum + (od.interest || 0), 0);
-    const savingsInterest = parseFloat(document.getElementById('manualSavingsInterest').value) || 0;
-    const totalDividend = odInterest + savingsInterest;
+    const { overdraftInterest, broughtForward, monthlyInterest, totalPool } = getDividendPoolBreakdown();
     const totalContrib = membersData.reduce((sum, m) => sum + calculateMemberTotal(m), 0);
 
     const dividendData = {
         year: currentYear,
         date: new Date().toISOString(),
         totalContributions: totalContrib,
-        overdraftInterest: odInterest,
-        savingsInterest: savingsInterest,
-        totalDividend: totalDividend,
+        overdraftInterest: overdraftInterest,
+        balanceBroughtForward: broughtForward,
+        monthlyInterest: monthlyInterest,
+        totalDividend: totalPool,
+        savingsInterest: monthlyInterest, // Legacy compatibility for older history readers
         memberCount: activeMembers.length
     };
 
@@ -108,14 +115,12 @@ function saveDividendToHistory() {
     localStorage.setItem('dividendHistory', JSON.stringify(history));
 
     showToast('Success', 'Dividend calculation saved to history', 'success');
-    addToAuditLog('Dividend', `Calculated dividends for ${currentYear}. Total: ${formatCurrency(totalDividend)}`);
+    addToAuditLog('Dividend', `Calculated dividends for ${currentYear}. Total: ${formatCurrency(totalPool)}`);
 }
 
 function exportDividendExcel() {
     const activeMembers = membersData.filter(m => !m.isArchived);
-    const odInterest = overdraftsData.reduce((sum, od) => sum + (od.interest || 0), 0);
-    const savingsInterest = parseFloat(document.getElementById('manualSavingsInterest').value) || 0;
-    const totalDividend = odInterest + savingsInterest;
+    const { overdraftInterest, broughtForward, monthlyInterest, totalPool } = getDividendPoolBreakdown();
     const totalContrib = membersData.reduce((sum, m) => sum + calculateMemberTotal(m), 0);
 
     const monthWeights = {
@@ -137,9 +142,10 @@ function exportDividendExcel() {
         ['Dividend Report', '', '', '', ''],
         ['Year:', currentYear, '', '', ''],
         ['Generated:', new Date().toLocaleDateString(), '', '', ''],
-        ['Overdraft Interest:', odInterest, '', '', ''],
-        ['Savings Interest:', savingsInterest, '', '', ''],
-        ['Total Dividend:', totalDividend, '', '', ''],
+        ['Overdraft Interest:', overdraftInterest, '', '', ''],
+        ['Balance B/F:', broughtForward, '', '', ''],
+        ['Monthly Interest:', monthlyInterest, '', '', ''],
+        ['Total Dividend Pool:', totalPool, '', '', ''],
         ['', '', '', '', ''],
         ['Member', 'Total Contrib.', 'Share %', 'Dividend', 'Total Payout']
     ];
@@ -148,7 +154,7 @@ function exportDividendExcel() {
         .sort((a, b) => b.totalContrib - a.totalContrib)
         .forEach(({ member, totalContrib, weightedContrib }) => {
             const sharePercent = totalWeightedContrib > 0 ? (weightedContrib / totalWeightedContrib) * 100 : 0;
-            const dividend = totalWeightedContrib > 0 ? (weightedContrib / totalWeightedContrib) * totalDividend : 0;
+            const dividend = totalWeightedContrib > 0 ? (weightedContrib / totalWeightedContrib) * totalPool : 0;
             wsData.push([member.name, totalContrib, sharePercent.toFixed(1) + '%', dividend, totalContrib + dividend]);
         });
 

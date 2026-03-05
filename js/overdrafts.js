@@ -1,11 +1,40 @@
 // --- OVERDRAFTS ---
-const OVERDRAFTS_BUILD = '2026-03-05.7';
+const OVERDRAFTS_BUILD = '2026-03-05.8';
+const OVERDRAFT_INTEREST_RATE = 0.02;
 
-function getOverdraftStatusClass(status) {
-    const normalized = normalizeOverdraftStatus(status);
-    if (normalized === OVERDRAFT_STATUS.SETTLED) return 'status-paid';
-    if (normalized === OVERDRAFT_STATUS.REJECTED) return 'status-rejected';
-    return 'status-pending';
+function getOverdraftPrincipal(od) {
+    const value = Number(od && od.amount);
+    return Number.isFinite(value) ? value : 0;
+}
+
+function getOverdraftInterest(od) {
+    const explicitInterest = Number(od && od.interest);
+    if (Number.isFinite(explicitInterest)) return explicitInterest;
+    return Math.round((getOverdraftPrincipal(od) * OVERDRAFT_INTEREST_RATE + Number.EPSILON) * 100) / 100;
+}
+
+function getInterestCollectionDate(od) {
+    const issuedAt = new Date(od && od.dateTaken ? od.dateTaken : new Date());
+    if (Number.isNaN(issuedAt.getTime())) return new Date();
+    return new Date(issuedAt.getFullYear(), issuedAt.getMonth() + 1, 1);
+}
+
+function formatCollectionMonth(od) {
+    return getInterestCollectionDate(od).toLocaleString('default', { month: 'long', year: 'numeric' });
+}
+
+function isInterestCollectible(od) {
+    const dueDate = getInterestCollectionDate(od);
+    const now = new Date();
+    if (now.getFullYear() > dueDate.getFullYear()) return true;
+    if (now.getFullYear() < dueDate.getFullYear()) return false;
+    return now.getMonth() >= dueDate.getMonth();
+}
+
+function getCollectibleCeilingNow(od) {
+    const principal = getOverdraftPrincipal(od);
+    const interest = getOverdraftInterest(od);
+    return isInterestCollectible(od) ? (principal + interest) : principal;
 }
 
 function getOverdraftTotalDue(od) {
@@ -16,9 +45,37 @@ function getOverdraftTotalDue(od) {
     const totalRepayment = Number(od.totalRepayment);
     if (Number.isFinite(totalRepayment)) return totalRepayment;
 
-    const amount = Number(od.amount) || 0;
-    const interest = Number(od.interest) || 0;
-    return amount + interest;
+    return getOverdraftPrincipal(od) + getOverdraftInterest(od);
+}
+
+function getRemainingTotal(od) {
+    return Math.max(0, getOverdraftTotalDue(od) - (Number(od && od.amountPaid) || 0));
+}
+
+function getRemainingCollectibleNow(od) {
+    const totalDue = getOverdraftTotalDue(od);
+    const cappedDueNow = Math.min(totalDue, getCollectibleCeilingNow(od));
+    return Math.max(0, cappedDueNow - (Number(od && od.amountPaid) || 0));
+}
+
+function getOverdraftStatusLabel(od) {
+    const normalized = normalizeOverdraftStatus(od && od.status);
+    if (normalized === OVERDRAFT_STATUS.SETTLED) return 'Settled';
+    if (normalized === OVERDRAFT_STATUS.REJECTED) return 'Rejected';
+
+    const principal = getOverdraftPrincipal(od);
+    const paid = Number(od && od.amountPaid) || 0;
+    if (!isInterestCollectible(od)) return `Interest in ${formatCollectionMonth(od)}`;
+    if (paid < principal) return 'Principal Due';
+    return 'Interest Due';
+}
+
+function getOverdraftStatusClass(od) {
+    const normalized = normalizeOverdraftStatus(od && od.status);
+    if (normalized === OVERDRAFT_STATUS.SETTLED) return 'status-paid';
+    if (normalized === OVERDRAFT_STATUS.REJECTED) return 'status-rejected';
+    if (isInterestCollectible(od)) return 'status-active';
+    return 'status-pending';
 }
 
 function openIssueOverdraftModal() {
@@ -69,13 +126,7 @@ async function issueOverdraft(event) {
         return;
     }
 
-    const rate = Number(INTEREST_RATE);
-    if (!Number.isFinite(rate) || rate < 0) {
-        showToast('Error', `Overdraft config error: invalid INTEREST_RATE (${INTEREST_RATE})`, 'error');
-        return;
-    }
-
-    const interestAmount = Math.round((amount * rate + Number.EPSILON) * 100) / 100;
+    const interestAmount = Math.round((amount * OVERDRAFT_INTEREST_RATE + Number.EPSILON) * 100) / 100;
     const totalDue = Math.round((amount + interestAmount + Number.EPSILON) * 100) / 100;
     const totalRepayment = totalDue;
 
@@ -128,7 +179,10 @@ async function issueOverdraft(event) {
         });
 
         showToast('Success', `Overdraft of ${formatCurrency(amount)} issued to ${member.name}`, 'success');
-        addToAuditLog('Issue Overdraft', `${member.name}: ${formatCurrency(amount)} (Interest: ${formatCurrency(interestAmount)})`);
+        addToAuditLog(
+            'Issue Overdraft',
+            `${member.name}: ${formatCurrency(amount)} (Interest: ${formatCurrency(interestAmount)} due ${formatCollectionMonth({ dateTaken: createPayload.dateTaken })})`
+        );
         renderOverdraftsTable();
         closeIssueOverdraftModal();
     } catch (e) {
@@ -154,14 +208,26 @@ function openRepayOverdraftModal(overdraftId) {
     }
 
     const totalDue = getOverdraftTotalDue(od);
-    const remaining = totalDue - (od.amountPaid || 0);
+    const remaining = getRemainingTotal(od);
+    const collectibleNow = getRemainingCollectibleNow(od);
+    const collectionMonth = formatCollectionMonth(od);
+
+    if (collectibleNow <= 0 && remaining > 0 && !isInterestCollectible(od)) {
+        showToast('Interest Pending', `Interest will be collected in ${collectionMonth}`, 'info');
+        return;
+    }
+
     document.getElementById('repayOverdraftId').value = overdraftId;
     document.getElementById('repayMemberName').textContent = od.memberName;
+    document.getElementById('repayPrincipal').textContent = formatCurrency(getOverdraftPrincipal(od));
+    document.getElementById('repayInterest').textContent = formatCurrency(getOverdraftInterest(od));
+    document.getElementById('repayCollectionMonth').textContent = collectionMonth;
     document.getElementById('repayTotalDue').textContent = formatCurrency(totalDue);
     document.getElementById('repayAmountPaid').textContent = formatCurrency(od.amountPaid || 0);
+    document.getElementById('repayCollectibleNow').textContent = formatCurrency(collectibleNow);
     document.getElementById('repayRemaining').textContent = formatCurrency(remaining);
     document.getElementById('repayAmount').value = '';
-    document.getElementById('repayAmount').max = remaining;
+    document.getElementById('repayAmount').max = collectibleNow;
     document.getElementById('repayOverdraftModal').classList.add('active');
     setTimeout(() => document.getElementById('repayAmount').focus(), 100);
 }
@@ -185,7 +251,8 @@ async function repayOverdraft(event) {
     }
 
     const totalDue = getOverdraftTotalDue(od);
-    const remaining = totalDue - (od.amountPaid || 0);
+    const remaining = getRemainingTotal(od);
+    const remainingCollectibleNow = getRemainingCollectibleNow(od);
 
     if (!repayAmt || repayAmt <= 0) {
         showToast('Error', 'Please enter a valid amount', 'error');
@@ -195,11 +262,22 @@ async function repayOverdraft(event) {
         showToast('Error', `Amount exceeds remaining balance of ${formatCurrency(remaining)}`, 'error');
         return;
     }
+    if (repayAmt > remainingCollectibleNow) {
+        if (!isInterestCollectible(od)) {
+            showToast('Error', `Only principal can be collected now. Interest is due in ${formatCollectionMonth(od)}.`, 'error');
+        } else {
+            showToast('Error', `Amount exceeds collectible balance of ${formatCurrency(remainingCollectibleNow)}`, 'error');
+        }
+        return;
+    }
 
     const newPaid = (od.amountPaid || 0) + repayAmt;
-    const newStatus = newPaid >= totalDue
-        ? OVERDRAFT_STATUS.SETTLED
-        : OVERDRAFT_STATUS.APPROVED;
+    let newStatus = OVERDRAFT_STATUS.PENDING;
+    if (newPaid >= totalDue) {
+        newStatus = OVERDRAFT_STATUS.SETTLED;
+    } else if (isInterestCollectible(od)) {
+        newStatus = OVERDRAFT_STATUS.APPROVED;
+    }
 
     try {
         await databases.updateDocument(DB_ID, 'overdrafts', odId, {
@@ -237,7 +315,7 @@ function renderOverdraftsTable() {
     if (overdraftsData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8">
+                <td colspan="9">
                     <div class="empty-state">
                         <div class="empty-state-icon"><i class="fas fa-hand-holding-usd"></i></div>
                         <h3>No overdrafts</h3>
@@ -262,13 +340,14 @@ function renderOverdraftsTable() {
         const member = String(od.memberName || '').toLowerCase();
         const reason = String(od.reason || '').toLowerCase();
         const status = String(od.status || '').toLowerCase();
-        return member.includes(searchTerm) || reason.includes(searchTerm) || status.includes(searchTerm);
+        const collectionMonth = formatCollectionMonth(od).toLowerCase();
+        return member.includes(searchTerm) || reason.includes(searchTerm) || status.includes(searchTerm) || collectionMonth.includes(searchTerm);
     });
 
     if (filteredData.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8">
+                <td colspan="9">
                     <div class="empty-state">
                         <div class="empty-state-icon"><i class="fas fa-search"></i></div>
                         <h3>No matching overdrafts found</h3>
@@ -282,21 +361,22 @@ function renderOverdraftsTable() {
     filteredData.forEach(od => {
         const row = document.createElement('tr');
         const totalDue = getOverdraftTotalDue(od);
-        const remaining = totalDue - (od.amountPaid || 0);
+        const remaining = getRemainingTotal(od);
         const progress = totalDue > 0 ? ((od.amountPaid || 0) / totalDue * 100).toFixed(0) : 0;
-        const dateTaken = new Date(od.dateTaken);
         const isMgr = isManager();
-        const statusText = formatOverdraftStatus(od.status);
-        const statusClass = getOverdraftStatusClass(od.status);
+        const statusText = getOverdraftStatusLabel(od);
+        const statusClass = getOverdraftStatusClass(od);
         const isOpen = isOpenOverdraftStatus(od.status);
+        const collectionMonth = formatCollectionMonth(od);
 
         row.innerHTML = `
             <td data-label="Member" class="font-bold">${escapeHtml(od.memberName)}</td>
-            <td data-label="Amount" class="amount-cell">${formatCurrency(od.amount)}</td>
-            <td data-label="Interest" class="amount-cell text-warning">${formatCurrency(od.interest)}</td>
-            <td data-label="Total Due" class="amount-cell font-extra-bold">${formatCurrency(totalDue)}</td>
+            <td data-label="Principal" class="amount-cell">${formatCurrency(getOverdraftPrincipal(od))}</td>
+            <td data-label="Interest (2%)" class="amount-cell text-warning">${formatCurrency(getOverdraftInterest(od))}</td>
+            <td data-label="Collection Month" class="text-sm">${collectionMonth}</td>
+            <td data-label="Total Repayment" class="amount-cell font-extra-bold">${formatCurrency(totalDue)}</td>
             <td data-label="Paid" class="amount-cell text-success">${formatCurrency(od.amountPaid || 0)}</td>
-            <td data-label="Date" class="text-sm">${dateTaken.toLocaleDateString()}</td>
+            <td data-label="Remaining" class="amount-cell" style="color: var(--brand-error);">${formatCurrency(remaining)}</td>
             <td data-label="Status">
                 <span class="status-badge ${statusClass}">${statusText}</span>
                 ${isOpen ? `
@@ -312,3 +392,4 @@ function renderOverdraftsTable() {
         tbody.appendChild(row);
     });
 }
+
