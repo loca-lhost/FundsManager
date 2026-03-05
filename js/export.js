@@ -44,12 +44,13 @@ function exportToExcel() {
             ['Member', 'Principal', 'Interest (2%)', 'Collection Month', 'Total Repayment', 'Paid', 'Remaining', 'Status', 'Date Issued', 'Reason']
         ];
         overdraftsData.forEach(od => {
+            const issuedDate = od.dateTaken || od.dateIssued;
             const totalRepayment = typeof getOverdraftTotalDue === 'function'
                 ? getOverdraftTotalDue(od)
                 : (Number(od.totalDue || od.totalRepayment || 0));
             const collectionMonth = typeof formatCollectionMonth === 'function'
                 ? formatCollectionMonth(od)
-                : new Date(od.dateTaken).toLocaleDateString();
+                : new Date(issuedDate).toLocaleDateString();
             const remaining = Math.max(0, totalRepayment - (od.amountPaid || 0));
             odData.push([
                 od.memberName,
@@ -60,7 +61,7 @@ function exportToExcel() {
                 od.amountPaid || 0,
                 remaining,
                 typeof getOverdraftStatusLabel === 'function' ? getOverdraftStatusLabel(od) : od.status,
-                new Date(od.dateTaken).toLocaleDateString(),
+                new Date(issuedDate).toLocaleDateString(),
                 od.reason
             ]);
         });

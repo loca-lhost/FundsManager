@@ -17,7 +17,7 @@
     <!-- Favicon -->
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><defs><linearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:%230057B8;stop-opacity:1%22 /><stop offset=%22100%25%22 style=%22stop-color:%23003087;stop-opacity:1%22 /></linearGradient></defs><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22url(%23grad)%22/><text x=%2250%22 y=%2250%22 font-family=%22Arial, sans-serif%22 font-size=%2265%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.35em%22 font-weight=%22800%22>&#x20B5;</text></svg>">
-    <link rel="manifest" href="manifest.json?v=20260305.9">
+    <link rel="manifest" href="manifest.json?v=20260305.11">
 
     <!-- Ant Design CSS -->
     <link href="https://cdn.jsdelivr.net/npm/antd@5.12.5/dist/reset.css" rel="stylesheet">
@@ -47,13 +47,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
 
     <!-- Application CSS -->
-    <link rel="stylesheet" href="css/variables.css?v=20260305.9">
-    <link rel="stylesheet" href="css/base.css?v=20260305.9">
-    <link rel="stylesheet" href="css/layout.css?v=20260305.9">
-    <link rel="stylesheet" href="css/components.css?v=20260305.9">
-    <link rel="stylesheet" href="css/pages.css?v=20260305.9">
-    <link rel="stylesheet" href="css/responsive.css?v=20260305.9">
-    <link rel="stylesheet" href="css/apple.css?v=20260305.9">
+    <link rel="stylesheet" href="css/variables.css?v=20260305.11">
+    <link rel="stylesheet" href="css/base.css?v=20260305.11">
+    <link rel="stylesheet" href="css/layout.css?v=20260305.11">
+    <link rel="stylesheet" href="css/components.css?v=20260305.11">
+    <link rel="stylesheet" href="css/pages.css?v=20260305.11">
+    <link rel="stylesheet" href="css/responsive.css?v=20260305.11">
+    <link rel="stylesheet" href="css/apple.css?v=20260305.11">
 
 </head>
 
@@ -125,10 +125,6 @@
         <div class="fab-container" id="fabContainer">
             <div class="fab-overlay" onclick="toggleFab()"></div>
             <div class="fab-actions">
-                <button class="fab-action-btn" onclick="vibrate(); openIssueOverdraftModal(); toggleFab()"
-                    data-label="Issue Overdraft">
-                    <i class="fas fa-hand-holding-water"></i>
-                </button>
                 <button class="fab-action-btn" onclick="vibrate(); openContributionModal(); toggleFab()"
                     data-label="Record Contribution">
                     <i class="fas fa-hand-holding-usd"></i>
@@ -148,10 +144,6 @@
             <div class="bottom-nav-item active" onclick="switchTab('contributions')" id="bottom-nav-contributions">
                 <i class="fas fa-hand-holding-usd"></i>
                 <span>Contributions</span>
-            </div>
-            <div class="bottom-nav-item" onclick="switchTab('overdrafts')" id="bottom-nav-overdrafts">
-                <i class="fas fa-hand-holding-water"></i>
-                <span>Overdrafts</span>
             </div>
         </div>
 
@@ -225,7 +217,6 @@
             <div class="tabs-container">
                 <button class="tab-btn active" onclick="switchTab('contributions')"
                     id="tab-contributions">Contributions</button>
-                <button class="tab-btn" onclick="switchTab('overdrafts')" id="tab-overdrafts">Overdrafts</button>
             </div>
 
             <!-- Toolbar -->
@@ -262,9 +253,6 @@
                     <button class="btn btn-primary" id="btn-record-contribution" onclick="openBulkContributionModal()">
                         <i class="fas fa-hand-holding-usd"></i> Record Contribution
                     </button>
-                    <button class="btn btn-primary" id="btn-issue-overdraft" onclick="openIssueOverdraftModal()">
-                        <i class="fas fa-hand-holding-water"></i> Issue Overdraft
-                    </button>
 
                     <div class="dropdown">
                         <button class="btn btn-secondary dropdown-btn" id="btnOperations" onclick="toggleDropdown()">
@@ -287,10 +275,6 @@
                             <button class="dropdown-item" id="btnReportContributions" onclick="generatePDF()">
                                 <i class="fas fa-file-invoice-dollar" style="color: var(--brand-blue)"></i>
                                 Contributions Report
-                            </button>
-                            <button class="dropdown-item" id="btnReportOverdrafts" onclick="generatePDF()"
-                                style="display: none;">
-                                <i class="fas fa-file-invoice" style="color: var(--brand-error)"></i> Overdrafts Report
                             </button>
                         </div>
                     </div>
@@ -345,34 +329,6 @@
                                 <td class="amount-cell" id="grandTotal">0.00</td>
                             </tr>
                         </tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Overdrafts Table -->
-            <div class="table-container hidden" id="overdraftsSection">
-                <div class="table-header">
-                    <h2 class="table-title">Member Overdrafts</h2>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="overdraftsTable">
-                        <thead>
-                            <tr>
-                                <th>Member Name</th>
-                                <th style="text-align: right">Principal</th>
-                                <th style="text-align: right">Interest (2%)</th>
-                                <th>Collection Month</th>
-                                <th style="text-align: right">Total Repayment</th>
-                                <th style="text-align: right">Paid</th>
-                                <th style="text-align: right">Remaining</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="overdraftsTableBody">
-                            <!-- Data will be populated by JavaScript -->
-                        </tbody>
                     </table>
                 </div>
             </div>
@@ -980,96 +936,6 @@
         </div>
     </div>
 
-    <!-- Issue Overdraft Modal -->
-    <div class="modal" id="issueOverdraftModal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Issue Overdraft</h3>
-                <button class="close-modal" onclick="closeIssueOverdraftModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="issueOverdraftForm" onsubmit="issueOverdraft(event)">
-                <div class="form-group">
-                    <label class="form-label">Select Member</label>
-                    <select class="form-select" id="odMember" required>
-                        <option value="">Loading...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Amount (GH&#x20B5;)</label>
-                    <input type="number" class="form-input" id="odAmount" required min="1" step="0.01"
-                        inputmode="decimal" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Reason (Optional)</label>
-                    <input type="text" class="form-input" id="odReason" placeholder="e.g. Medical emergency">
-                </div>
-                <div
-                    style="margin-bottom: 1rem; background: var(--theme-surface-strong); padding: 0.75rem; border-radius: 10px; border: 1px solid var(--theme-surface-border); color: var(--theme-text-secondary); font-size: 0.85rem;">
-                    Interest is fixed at 2% of principal and collected in the following month.
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Issue Overdraft</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Repay Overdraft Modal -->
-    <div class="modal" id="repayOverdraftModal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Repay Overdraft</h3>
-                <button class="close-modal" onclick="closeRepayOverdraftModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="repayOverdraftForm" onsubmit="repayOverdraft(event)">
-                <input type="hidden" id="repayOverdraftId">
-                <div style="margin-bottom: 1.5rem; background: var(--theme-surface-strong); padding: 1rem; border-radius: 8px; border: 1px solid var(--theme-surface-border);">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: var(--theme-text-secondary);">Member:</span>
-                        <span style="font-weight: 600;" id="repayMemberName">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: var(--theme-text-secondary);">Principal:</span>
-                        <span style="font-weight: 600;" id="repayPrincipal">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: var(--theme-text-secondary);">Interest (2%):</span>
-                        <span style="font-weight: 600;" id="repayInterest">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: var(--theme-text-secondary);">Collection Month:</span>
-                        <span style="font-weight: 600;" id="repayCollectionMonth">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: var(--theme-text-secondary);">Total Repayment:</span>
-                        <span style="font-weight: 600;" id="repayTotalDue">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span style="color: var(--theme-text-secondary);">Amount Paid:</span>
-                        <span style="font-weight: 600; color: var(--brand-success);" id="repayAmountPaid">-</span>
-                    </div>
-                    <div
-                        style="display: flex; justify-content: space-between; border-top: 1px solid var(--theme-surface-border); padding-top: 0.5rem;">
-                        <span style="color: var(--brand-dark); font-weight: 600;">Collectible Now:</span>
-                        <span style="font-weight: 700; color: var(--brand-blue);" id="repayCollectibleNow">-</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 0.5rem;">
-                        <span style="color: var(--brand-dark); font-weight: 600;">Remaining Total:</span>
-                        <span style="font-weight: 700; color: var(--brand-error);" id="repayRemaining">-</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Repayment Amount (GH&#x20B5;)</label>
-                    <input type="number" class="form-input" id="repayAmount" required min="0.01" step="0.01"
-                        inputmode="decimal" placeholder="0.00">
-                </div>
-                <button type="submit" class="btn btn-success" style="width: 100%;">Record Payment</button>
-            </form>
-        </div>
-    </div>
-
     <!-- Backup & Data Management Modal -->
     <div class="modal" id="backupModal">
         <div class="modal-content" style="max-width: 500px;">
@@ -1132,20 +998,20 @@
     </div>
 
     <!-- Application JS (load order matters: config > state > utils > domain > UI > app) -->
-    <script src="js/config.js?v=20260305.9"></script>
-    <script src="js/state.js?v=20260305.9"></script>
-    <script src="js/utils.js?v=20260305.9"></script>
-    <script src="js/auth.js?v=20260305.9"></script>
-    <script src="js/settings.js?v=20260305.9"></script>
-    <script src="js/members.js?v=20260305.9"></script>
-    <script src="js/contributions.js?v=20260305.9"></script>
-    <script src="js/overdrafts.js?v=20260305.9"></script>
-    <script src="js/dividends.js?v=20260305.9"></script>
-    <script src="js/export.js?v=20260305.9"></script>
-    <script src="js/backup.js?v=20260305.9"></script>
-    <script src="js/audit.js?v=20260305.9"></script>
-    <script src="js/ui.js?v=20260305.9"></script>
-    <script src="js/app.js?v=20260305.9"></script>
+    <script src="js/config.js?v=20260305.11"></script>
+    <script src="js/state.js?v=20260305.11"></script>
+    <script src="js/utils.js?v=20260305.11"></script>
+    <script src="js/auth.js?v=20260305.11"></script>
+    <script src="js/settings.js?v=20260305.11"></script>
+    <script src="js/members.js?v=20260305.11"></script>
+    <script src="js/contributions.js?v=20260305.11"></script>
+    <script src="js/overdrafts.js?v=20260305.11"></script>
+    <script src="js/dividends.js?v=20260305.11"></script>
+    <script src="js/export.js?v=20260305.11"></script>
+    <script src="js/backup.js?v=20260305.11"></script>
+    <script src="js/audit.js?v=20260305.11"></script>
+    <script src="js/ui.js?v=20260305.11"></script>
+    <script src="js/app.js?v=20260305.11"></script>
 </body>
 
 </html>

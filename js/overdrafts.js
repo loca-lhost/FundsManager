@@ -1,5 +1,5 @@
 // --- OVERDRAFTS ---
-const OVERDRAFTS_BUILD = '2026-03-05.8';
+const OVERDRAFTS_BUILD = '2026-03-05.10';
 const OVERDRAFT_INTEREST_RATE = 0.02;
 
 function getOverdraftPrincipal(od) {
@@ -14,7 +14,8 @@ function getOverdraftInterest(od) {
 }
 
 function getInterestCollectionDate(od) {
-    const issuedAt = new Date(od && od.dateTaken ? od.dateTaken : new Date());
+    const issuedRaw = od && (od.dateIssued || od.dateTaken) ? (od.dateIssued || od.dateTaken) : new Date();
+    const issuedAt = new Date(issuedRaw);
     if (Number.isNaN(issuedAt.getTime())) return new Date();
     return new Date(issuedAt.getFullYear(), issuedAt.getMonth() + 1, 1);
 }
@@ -135,6 +136,8 @@ async function issueOverdraft(event) {
         return;
     }
 
+    const issuedAt = new Date().toISOString();
+
     try {
         const createPayload = {
             memberId: memberId,
@@ -145,7 +148,8 @@ async function issueOverdraft(event) {
             totalRepayment: totalRepayment,
             reason: reason,
             status: OVERDRAFT_STATUS.PENDING,
-            dateTaken: new Date().toISOString(),
+            dateTaken: issuedAt,
+            dateIssued: issuedAt,
             amountPaid: 0
         };
 
@@ -174,7 +178,8 @@ async function issueOverdraft(event) {
             totalRepayment: totalRepayment,
             reason: reason,
             status: OVERDRAFT_STATUS.PENDING,
-            dateTaken: new Date().toISOString(),
+            dateTaken: issuedAt,
+            dateIssued: issuedAt,
             amountPaid: 0
         });
 
@@ -331,7 +336,7 @@ function renderOverdraftsTable() {
         const bIsOpen = isOpenOverdraftStatus(b.status);
         if (aIsOpen && !bIsOpen) return -1;
         if (!aIsOpen && bIsOpen) return 1;
-        return new Date(b.dateTaken) - new Date(a.dateTaken);
+        return new Date(b.dateTaken || b.dateIssued || 0) - new Date(a.dateTaken || a.dateIssued || 0);
     });
 
     const filteredData = sortedData.filter(od => {

@@ -1,5 +1,5 @@
 // --- APP INITIALIZATION & DATA LOADING ---
-const APP_BUILD = '2026-03-05.9';
+const APP_BUILD = '2026-03-05.11';
 
 async function initializeData() {
     setFavicon();
@@ -145,7 +145,8 @@ async function loadYearData(year, silent = false) {
                 totalRepayment: totalDue,
                 reason: doc.reason || 'N/A',
                 status: normalizeOverdraftStatus(doc.status),
-                dateTaken: doc.dateTaken,
+                dateTaken: doc.dateTaken || doc.dateIssued,
+                dateIssued: doc.dateIssued || doc.dateTaken,
                 amountPaid: doc.amountPaid || 0
             };
         });

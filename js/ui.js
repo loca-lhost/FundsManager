@@ -52,53 +52,42 @@ function createToastContainer() {
 
 // Tab Switching
 function switchTab(tabName) {
+    const activeTab = 'contributions';
     const sections = {
-        contributions: document.getElementById('contributionsSection'),
-        overdrafts: document.getElementById('overdraftsSection')
+        contributions: document.getElementById('contributionsSection')
     };
 
     Object.entries(sections).forEach(([name, section]) => {
         if (!section) return;
-        section.classList.toggle('hidden', name !== tabName);
+        section.classList.toggle('hidden', name !== activeTab);
     });
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.id === `tab-${tabName}`);
+        btn.classList.toggle('active', btn.id === `tab-${activeTab}`);
     });
 
     document.querySelectorAll('.bottom-nav-item').forEach(item => {
-        item.classList.toggle('active', item.id === `bottom-nav-${tabName}`);
+        item.classList.toggle('active', item.id === `bottom-nav-${activeTab}`);
     });
 
     const managerAllowed = typeof isManager === 'function' && isManager();
     const recordBtn = document.getElementById('btn-record-contribution');
-    const issueBtn = document.getElementById('btn-issue-overdraft');
     const reportContribBtn = document.getElementById('btnReportContributions');
-    const reportOverdraftBtn = document.getElementById('btnReportOverdrafts');
 
     if (recordBtn) recordBtn.classList.remove('hidden');
-    if (issueBtn) issueBtn.classList.remove('hidden');
-    if (recordBtn) recordBtn.style.display = managerAllowed && tabName === 'contributions' ? '' : 'none';
-    if (issueBtn) issueBtn.style.display = managerAllowed && tabName === 'overdrafts' ? '' : 'none';
-    if (reportContribBtn) reportContribBtn.style.display = tabName === 'contributions' ? '' : 'none';
-    if (reportOverdraftBtn) reportOverdraftBtn.style.display = tabName === 'overdrafts' ? '' : 'none';
+    if (recordBtn) recordBtn.style.display = managerAllowed ? '' : 'none';
+    if (reportContribBtn) reportContribBtn.style.display = '';
 
     const searchInput = document.getElementById('searchInput');
     const yearFilter = document.getElementById('yearFilter');
     const monthFilter = document.getElementById('monthFilter');
     if (searchInput) {
-        searchInput.placeholder = tabName === 'overdrafts'
-            ? 'Search member, reason, or status...'
-            : 'Search members or account number...';
+        searchInput.placeholder = 'Search members or account number...';
     }
-    if (yearFilter) yearFilter.style.display = tabName === 'contributions' ? '' : 'none';
-    if (monthFilter) monthFilter.style.display = tabName === 'contributions' ? '' : 'none';
+    if (yearFilter) yearFilter.style.display = '';
+    if (monthFilter) monthFilter.style.display = '';
 
-    if (tabName === 'overdrafts') {
-        renderOverdraftsTable();
-    } else {
-        renderTable();
-    }
+    renderTable();
 
     vibrate(25);
 }
@@ -123,12 +112,7 @@ function setupToolbarInteractions() {
     const searchInput = document.getElementById('searchInput');
     if (searchInput && !searchInput.dataset.bound) {
         const debouncedRender = debounce(() => {
-            const activeTab = document.querySelector('.tab-btn.active')?.id?.replace('tab-', '') || 'contributions';
-            if (activeTab === 'overdrafts') {
-                renderOverdraftsTable();
-            } else {
-                renderTable();
-            }
+            renderTable();
         }, 180);
         searchInput.addEventListener('input', debouncedRender);
         searchInput.dataset.bound = 'true';

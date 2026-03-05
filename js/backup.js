@@ -193,6 +193,8 @@ async function restoreBackupDataToDatabase(rawData) {
             sanitizeMoney(backupOverdraft.totalRepayment, 0)
         );
 
+        const restoredIssuedAt = backupOverdraft.dateIssued || backupOverdraft.dateTaken || new Date().toISOString();
+
         await databases.createDocument(DB_ID, 'overdrafts', 'unique()', {
             memberId: targetMemberId,
             memberName: memberName,
@@ -202,7 +204,8 @@ async function restoreBackupDataToDatabase(rawData) {
             totalRepayment: totalDue,
             reason: backupOverdraft.reason || 'N/A',
             status: normalizeOverdraftStatus(backupOverdraft.status || OVERDRAFT_STATUS.PENDING),
-            dateTaken: backupOverdraft.dateTaken || new Date().toISOString(),
+            dateTaken: restoredIssuedAt,
+            dateIssued: restoredIssuedAt,
             amountPaid: sanitizeMoney(backupOverdraft.amountPaid, 0)
         });
 
