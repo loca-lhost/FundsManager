@@ -88,11 +88,12 @@ async function handleAuthenticatedUser(user) {
         document.getElementById('btnVerifyEmail').style.display = 'none';
     }
 
+    const normalizedRole = String(userData.role || '').toLowerCase();
     const adminItems = document.querySelectorAll('.admin-only');
-    adminItems.forEach(el => el.style.display = userData.role === 'admin' ? '' : 'none');
+    adminItems.forEach(el => el.style.display = normalizedRole === 'admin' ? '' : 'none');
 
     // Manager-only items
-    const isManagerRole = userData.role === 'admin' || userData.role === 'fund_manager';
+    const isManagerRole = normalizedRole === 'admin' || normalizedRole === 'fund_manager' || normalizedRole === 'manager';
     if (document.getElementById('btnAddMember')) {
         document.getElementById('btnAddMember').classList.remove('hidden');
         document.getElementById('btnAddMember').style.display = isManagerRole ? '' : 'none';

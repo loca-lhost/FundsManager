@@ -89,7 +89,13 @@ async function issueOverdraft(event) {
         renderOverdraftsTable();
         closeIssueOverdraftModal();
     } catch (e) {
-        showToast('Error', 'Failed to issue overdraft: ' + e.message, 'error');
+        console.error('Issue overdraft failed', e);
+        const details = [
+            e && e.message ? e.message : 'Unknown error',
+            e && e.type ? `type=${e.type}` : '',
+            e && typeof e.code !== 'undefined' ? `code=${e.code}` : ''
+        ].filter(Boolean).join(' | ');
+        showToast('Error', 'Failed to issue overdraft: ' + details, 'error');
     }
 }
 

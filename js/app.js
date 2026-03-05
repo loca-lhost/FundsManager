@@ -1,5 +1,5 @@
-// --- APP INITIALIZATION & DATA LOADING ---
-const APP_BUILD = '2026-03-05.4';
+﻿// --- APP INITIALIZATION & DATA LOADING ---
+const APP_BUILD = '2026-03-05.5';
 
 async function initializeData() {
     setFavicon();
@@ -239,3 +239,4 @@ function bootstrap() {
 
 // Run on load
 bootstrap();
+

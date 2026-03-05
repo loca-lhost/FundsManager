@@ -154,14 +154,15 @@ function isAdmin() {
     const session = sessionStorage.getItem('welfareUser');
     if (!session) return false;
     const user = JSON.parse(session);
-    return user.role === 'admin';
+    return String(user.role || '').toLowerCase() === 'admin';
 }
 
 function isManager() {
     const session = sessionStorage.getItem('welfareUser');
     if (!session) return false;
     const user = JSON.parse(session);
-    return user.role === 'admin' || user.role === 'fund_manager';
+    const role = String(user.role || '').toLowerCase();
+    return role === 'admin' || role === 'fund_manager' || role === 'manager';
 }
 
 function getInactivityLimit() {
