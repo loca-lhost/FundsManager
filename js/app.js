@@ -1,4 +1,5 @@
 // --- APP INITIALIZATION & DATA LOADING ---
+const APP_BUILD = '2026-03-05.2';
 
 async function initializeData() {
     setFavicon();
@@ -230,6 +231,7 @@ function bootstrap() {
                 <h3>System Error</h3>
                 <p>Failed to initialize application data. Please ensure cookies/local storage are enabled.</p>
                 <p>${message}</p>
+                <small style="opacity: 0.8;">Build: ${APP_BUILD}</small>
             </div>
         `;
     }
