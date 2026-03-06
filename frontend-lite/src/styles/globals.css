@@ -814,30 +814,85 @@ tbody tr:hover {
 
 .contributions-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr);
   min-height: 640px;
 }
 
-.contributions-table-pane {
+.contributions-list-pane {
   border-right: 1px solid rgba(35, 86, 154, 0.11);
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.66rem;
 }
 
-.contributions-table {
-  min-width: 920px;
+.contributions-list-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.66rem;
+  padding: 0.2rem 0.2rem 0.45rem;
+  border-bottom: 1px dashed rgba(35, 86, 154, 0.2);
+  color: var(--ink-620);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.contributions-table tbody tr {
+.contributions-list-summary strong {
+  color: var(--blue-900);
+  font-size: 0.84rem;
+}
+
+.contributions-member-list {
+  display: grid;
+  gap: 0.56rem;
+  max-height: 560px;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+
+.contributions-member-item {
+  align-items: center;
   cursor: pointer;
 }
 
-.contributions-table tbody tr:focus-visible {
+.contributions-member-item:focus-visible {
   outline: 2px solid rgba(42, 106, 184, 0.62);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 
-.contributions-table tbody tr.selected-row,
-.contributions-table tbody tr.selected-row:hover {
-  background: rgba(46, 111, 194, 0.16);
+.contributions-member-item.selected,
+.contributions-member-item.selected:hover {
+  border-color: rgba(35, 86, 154, 0.36);
+  background: rgba(225, 238, 255, 0.82);
+}
+
+.contribution-member-meta {
+  margin-top: 0.3rem;
+  color: var(--ink-620);
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.contribution-member-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.contribution-member-side-label {
+  color: var(--ink-620);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.contribution-member-edit {
+  margin-top: 0.38rem;
 }
 
 .contribution-detail-pane {
@@ -854,6 +909,15 @@ tbody tr:hover {
 .contribution-detail-head h3 {
   color: var(--blue-900);
   font-size: 1rem;
+}
+
+.contribution-detail-kicker {
+  color: var(--ink-620);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
 }
 
 .contribution-detail-head p {
@@ -891,19 +955,30 @@ tbody tr:hover {
   font-size: 0.88rem;
 }
 
-.contribution-breakdown-label {
+.contribution-breakdown {
+  border: 1px solid rgba(35, 86, 154, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.86);
+  overflow: hidden;
+}
+
+.contribution-breakdown-summary {
+  list-style: none;
+  cursor: pointer;
   color: var(--ink-620);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 0.36rem;
+  padding: 0.5rem 0.58rem;
+  border-bottom: 1px dashed rgba(35, 86, 154, 0.13);
+}
+
+.contribution-breakdown-summary::-webkit-details-marker {
+  display: none;
 }
 
 .contribution-breakdown-list {
-  border: 1px solid rgba(35, 86, 154, 0.14);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.86);
   max-height: 308px;
   overflow: auto;
 }
@@ -1505,50 +1580,29 @@ tbody tr:hover {
   }
 
   .contributions-layout {
-    grid-template-columns: minmax(0, 1.35fr) minmax(290px, 1fr);
-  }
-
-  .contributions-table {
-    min-width: 860px;
-  }
-
-  .contributions-table .month-september,
-  .contributions-table .month-october,
-  .contributions-table .month-november,
-  .contributions-table .month-december {
-    display: none;
+    grid-template-columns: minmax(0, 1.05fr) minmax(290px, 1fr);
   }
 }
 
 @media (max-width: 1080px) {
-  .contributions-table {
-    min-width: 760px;
-  }
-
-  .contributions-table .month-july,
-  .contributions-table .month-august,
-  .contributions-table .month-september,
-  .contributions-table .month-october,
-  .contributions-table .month-november,
-  .contributions-table .month-december {
-    display: none;
+  .contributions-member-list {
+    max-height: 500px;
   }
 }
 
 @media (max-width: 980px) {
-  .contributions-table {
-    min-width: 640px;
+  .contributions-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
   }
 
-  .contributions-table .month-may,
-  .contributions-table .month-june,
-  .contributions-table .month-july,
-  .contributions-table .month-august,
-  .contributions-table .month-september,
-  .contributions-table .month-october,
-  .contributions-table .month-november,
-  .contributions-table .month-december {
-    display: none;
+  .contributions-list-pane {
+    border-right: 0;
+    border-bottom: 1px solid rgba(35, 86, 154, 0.12);
+  }
+
+  .contribution-detail-pane {
+    padding-top: 0.74rem;
   }
 }
 
@@ -1611,18 +1665,8 @@ tbody tr:hover {
     flex: 1;
   }
 
-  .contributions-layout {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
-  .contributions-table-pane {
-    border-right: 0;
-    border-bottom: 1px solid rgba(35, 86, 154, 0.12);
-  }
-
-  .contribution-detail-pane {
-    padding-top: 0.74rem;
+  .contributions-member-list {
+    max-height: none;
   }
 }
 
@@ -1706,11 +1750,30 @@ tbody tr:hover {
   }
 
   .contributions-layout {
-    display: none;
+    grid-template-columns: 1fr;
+    min-height: auto;
   }
 
-  .contributions-mobile {
-    display: block;
+  .contributions-list-pane {
+    padding: 0.64rem;
+    border-right: 0;
+    border-bottom: 1px solid rgba(35, 86, 154, 0.12);
+  }
+
+  .contribution-member-card {
+    padding: 0.58rem 0.62rem;
+  }
+
+  .contribution-member-side {
+    align-items: flex-start;
+  }
+
+  .contribution-member-edit {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .contribution-detail-pane {
     padding: 0.64rem;
   }
 }

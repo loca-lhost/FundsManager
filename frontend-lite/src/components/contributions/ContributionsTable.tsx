@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { months } from "@/lib/months";
-import { currency, memberTotal, monthlyTotal } from "@/lib/format";
+import { currency, memberTotal } from "@/lib/format";
 import type { MemberContribution } from "@/types/funds";
 
 type ContributionsTableProps = {
@@ -10,10 +10,6 @@ type ContributionsTableProps = {
   onEditMember: (member: MemberContribution) => void;
   onOpenContributionModal: () => void;
 };
-
-function monthToken(month: string): string {
-  return month.toLowerCase();
-}
 
 function getActiveMonthsCount(member: MemberContribution): number {
   return months.reduce((count, month) => count + ((member.contributions[month] || 0) > 0 ? 1 : 0), 0);
@@ -49,6 +45,7 @@ function MemberContributionDetail({ member, canManage, compact = false, onEditMe
   return (
     <section className={`contribution-detail ${compact ? "compact" : ""}`}>
       <div className="contribution-detail-head">
+        <p className="contribution-detail-kicker">Selected Member</p>
         <h3>{member.name}</h3>
         <p>{member.accountNumber}</p>
       </div>
@@ -74,8 +71,8 @@ function MemberContributionDetail({ member, canManage, compact = false, onEditMe
         </div>
       </div>
 
-      <div className="contribution-breakdown">
-        <p className="contribution-breakdown-label">Monthly Breakdown</p>
+      <details className="contribution-breakdown" open={!compact}>
+        <summary className="contribution-breakdown-summary">Monthly Contributions</summary>
         <div className="contribution-breakdown-list">
           {monthBreakdown.map((item) => (
             <div className="contribution-breakdown-row" key={`${member.id}-${item.month}`}>
@@ -84,7 +81,7 @@ function MemberContributionDetail({ member, canManage, compact = false, onEditMe
             </div>
           ))}
         </div>
-      </div>
+      </details>
 
       {canManage && (
         <div className="contribution-detail-actions">
@@ -105,6 +102,7 @@ export default function ContributionsTable({
   onOpenContributionModal,
 }: ContributionsTableProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+
   const selectedMember = useMemo(() => {
     if (members.length === 0) return null;
     if (selectedMemberId && members.some((member) => member.id === selectedMemberId)) {
@@ -112,6 +110,7 @@ export default function ContributionsTable({
     }
     return members[0];
   }, [members, selectedMemberId]);
+  const portfolioTotal = useMemo(() => members.reduce((sum, member) => sum + memberTotal(member), 0), [members]);
 
   return (
     <div className="table-container contributions-container" id="contributionsSection">
@@ -140,141 +139,66 @@ export default function ContributionsTable({
       ) : (
         <>
           <div className="contributions-layout">
-            <div className="table-wrapper contributions-table-pane">
-              <table className="contributions-table stacked-table" id="dataTable">
-                <thead>
-                  <tr>
-                    <th>Member Name</th>
-                    <th>Account Number</th>
-                    {months.map((month) => (
-                      <th className={`th-right month-col month-${monthToken(month)}`} key={month}>
-                        {month}
-                      </th>
-                    ))}
-                    <th className="th-right">Total</th>
-                  </tr>
-                </thead>
-
-                <tbody id="tableBody">
-                  {members.map((member) => {
-                    const isSelected = selectedMember?.id === member.id;
-                    return (
-                      <tr
-                        aria-selected={isSelected}
-                        className={isSelected ? "selected-row" : ""}
-                        key={member.id}
-                        onClick={() => setSelectedMemberId(member.id)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            setSelectedMemberId(member.id);
-                          }
-                        }}
-                        tabIndex={0}
-                      >
-                        <td className="font-bold" data-label="Member Name">
-                          {canManage ? (
-                            <button
-                              className="member-link"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setSelectedMemberId(member.id);
-                                onEditMember(member);
-                              }}
-                              type="button"
-                            >
-                              {member.name}
-                            </button>
-                          ) : (
-                            <span className="member-link-static">{member.name}</span>
-                          )}
-                        </td>
-                        <td data-label="Account Number">{member.accountNumber}</td>
-                        {months.map((month) => (
-                          <td
-                            className={`amount-cell month-col month-${monthToken(month)}`}
-                            data-label={month}
-                            key={`${member.id}-${month}`}
+            <div className="contributions-list-pane">
+              <div className="contributions-list-summary">
+                <span>{members.length} members</span>
+                <strong>{currency(portfolioTotal)} total pool</strong>
+              </div>
+              <div className="contributions-member-list" id="tableBody">
+                {members.map((member) => {
+                  const isSelected = selectedMember?.id === member.id;
+                  const total = memberTotal(member);
+                  const activeMonths = getActiveMonthsCount(member);
+                  const highestMonth = getHighestContributionMonth(member);
+                  return (
+                    <article
+                      aria-selected={isSelected}
+                      className={`contribution-member-card contributions-member-item ${isSelected ? "selected" : ""}`}
+                      key={member.id}
+                      onClick={() => setSelectedMemberId(member.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedMemberId(member.id);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="contribution-member-copy">
+                        <h4>{member.name}</h4>
+                        <p>{member.accountNumber}</p>
+                        <p className="contribution-member-meta">
+                          {activeMonths} active months • Peak {highestMonth.month}: {currency(highestMonth.amount)}
+                        </p>
+                      </div>
+                      <div className="contribution-member-side">
+                        <strong className="contribution-member-total">{currency(total)}</strong>
+                        <span className="contribution-member-side-label">YTD Total</span>
+                        {canManage && (
+                          <button
+                            className="btn btn-secondary btn-sm contribution-member-edit"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setSelectedMemberId(member.id);
+                              onEditMember(member);
+                            }}
+                            type="button"
                           >
-                            {currency(member.contributions[month] || 0)}
-                          </td>
-                        ))}
-                        <td className="amount-cell font-extra-bold" data-label="Total">
-                          {currency(memberTotal(member))}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-
-                <tfoot>
-                  <tr className="total-row">
-                    <td colSpan={2}>MONTHLY TOTALS</td>
-                    {months.map((month) => (
-                      <td className={`amount-cell month-col month-${monthToken(month)}`} key={`total-${month}`}>
-                        {currency(monthlyTotal(members, month))}
-                      </td>
-                    ))}
-                    <td className="amount-cell">{currency(members.reduce((sum, member) => sum + memberTotal(member), 0))}</td>
-                  </tr>
-                </tfoot>
-              </table>
+                            <i className="fas fa-edit" /> Edit
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             </div>
 
             {selectedMember && (
               <aside className="contribution-detail-pane">
                 <MemberContributionDetail canManage={canManage} member={selectedMember} onEditMember={onEditMember} />
               </aside>
-            )}
-          </div>
-
-          <div className="contributions-mobile">
-            <div className="contributions-mobile-list">
-              {members.map((member) => {
-                const isSelected = selectedMember?.id === member.id;
-                return (
-                  <article
-                    className={`contribution-member-card ${isSelected ? "selected" : ""}`}
-                    key={`mobile-${member.id}`}
-                    onClick={() => setSelectedMemberId(member.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setSelectedMemberId(member.id);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="contribution-member-copy">
-                      {canManage ? (
-                        <button
-                          className="member-link contribution-card-name"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedMemberId(member.id);
-                            onEditMember(member);
-                          }}
-                          type="button"
-                        >
-                          {member.name}
-                        </button>
-                      ) : (
-                        <h4>{member.name}</h4>
-                      )}
-                      <p>{member.accountNumber}</p>
-                    </div>
-                    <strong className="contribution-member-total">{currency(memberTotal(member))}</strong>
-                  </article>
-                );
-              })}
-            </div>
-
-            {selectedMember && (
-              <div className="contribution-mobile-sheet">
-                <div className="contribution-sheet-grabber" />
-                <MemberContributionDetail canManage={canManage} compact member={selectedMember} onEditMember={onEditMember} />
-              </div>
             )}
           </div>
         </>
