@@ -3,12 +3,32 @@
 import { useEffect, useRef, useState } from "react";
 
 type AppHeaderProps = {
+  activeView: "contributions" | "overdrafts";
+  canManage: boolean;
+  canAdmin: boolean;
+  showArchived: boolean;
+  onOpenAddMemberModal: () => void;
+  onOpenContributionModal: () => void;
+  onOpenDividendModal: () => void;
+  onToggleArchived: () => void;
   userName: string;
   role: string;
   onLogout: () => Promise<void>;
 };
 
-export default function AppHeader({ userName, role, onLogout }: AppHeaderProps) {
+export default function AppHeader({
+  activeView,
+  canManage,
+  canAdmin,
+  showArchived,
+  onOpenAddMemberModal,
+  onOpenContributionModal,
+  onOpenDividendModal,
+  onToggleArchived,
+  userName,
+  role,
+  onLogout,
+}: AppHeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -66,6 +86,69 @@ export default function AppHeader({ userName, role, onLogout }: AppHeaderProps) 
               <button className="dropdown-item" disabled type="button">
                 <i className="fas fa-key" /> Change Password (Coming soon)
               </button>
+
+              {(canManage || canAdmin) && (
+                <>
+                  <div className="dropdown-divider" />
+                  <div className="dropdown-section-label">Actions</div>
+
+                  {canManage && activeView === "contributions" && (
+                    <>
+                      <button
+                        className="dropdown-item"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onOpenAddMemberModal();
+                          setProfileOpen(false);
+                        }}
+                        type="button"
+                      >
+                        <i className="fas fa-user-plus text-success" /> Add Member
+                      </button>
+                      <button
+                        className="dropdown-item"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onOpenContributionModal();
+                          setProfileOpen(false);
+                        }}
+                        type="button"
+                      >
+                        <i className="fas fa-hand-holding-usd text-success" /> Record Contribution
+                      </button>
+                    </>
+                  )}
+
+                  {canManage && (
+                    <button
+                      className="dropdown-item"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onOpenDividendModal();
+                        setProfileOpen(false);
+                      }}
+                      type="button"
+                    >
+                      <i className="fas fa-calculator text-success" /> Calculate Dividends
+                    </button>
+                  )}
+
+                  {canAdmin && (
+                    <button
+                      className="dropdown-item"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onToggleArchived();
+                        setProfileOpen(false);
+                      }}
+                      type="button"
+                    >
+                      <i className="fas fa-archive text-muted" /> {showArchived ? "Hide Archived" : "Show Archived"}
+                    </button>
+                  )}
+                </>
+              )}
+
               <div className="dropdown-divider" />
               <button
                 className="dropdown-item"

@@ -1,5 +1,4 @@
 import { currency } from "@/lib/format";
-import { buildOverdraftReference } from "@/lib/overdraft-letter";
 import {
   formatCollectionMonth,
   getOverdraftStatusLabel,
@@ -15,6 +14,7 @@ type OverdraftSectionProps = {
   overdrafts: OverdraftRecord[];
   loading: boolean;
   canManage: boolean;
+  getReference: (record: OverdraftRecord) => string;
   onOpenIssueModal: () => void;
   onOpenRepayModal: (record: OverdraftRecord) => void;
   onPrintLetter: (record: OverdraftRecord) => void;
@@ -24,6 +24,7 @@ export default function OverdraftSection({
   overdrafts,
   loading,
   canManage,
+  getReference,
   onOpenIssueModal,
   onOpenRepayModal,
   onPrintLetter,
@@ -104,7 +105,7 @@ export default function OverdraftSection({
                 const remaining = getRemainingTotal(item);
                 const openStatus = isOpenOverdraftStatus(item.status);
                 const label = getOverdraftStatusLabel(item);
-                const reference = buildOverdraftReference(item);
+                const reference = getReference(item);
 
                 return (
                   <tr key={item.id}>

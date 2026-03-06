@@ -3,10 +3,12 @@ import type { OverdraftRecord } from "@/types/funds";
 
 type PrintOverdraftLetterInput = {
   record: OverdraftRecord;
+  referenceNumber?: string;
   memberAccountNumber: string;
   managerName: string;
   organizationName?: string;
   printedBy?: string;
+  printWindow?: Window | null;
 };
 
 function escapeHtml(value: string): string {
@@ -38,27 +40,95 @@ function formatCollectionMonth(value: string): string {
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(due);
 }
 
-function safeReferenceId(rawId: string): string {
-  const compact = rawId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-  if (compact.length >= 6) return compact.slice(-6);
-  return compact.padStart(6, "0");
+function toReferenceDateStamp(value: string): string {
+  const date = toSafeDate(value);
+  const year = String(date.getUTCFullYear());
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  return `${year}${month}${day}`;
 }
 
-export function buildOverdraftReference(record: Pick<OverdraftRecord, "id" | "dateIssued" | "year">): string {
-  const issued = toSafeDate(record.dateIssued);
-  const year = Number.isFinite(record.year) ? record.year : issued.getFullYear();
-  const month = String(issued.getMonth() + 1).padStart(2, "0");
-  return `OD-${year}-${month}-${safeReferenceId(record.id)}`;
+function formatOverdraftReference(dateStamp: string, sequence: number): string {
+  return `OD${dateStamp}-${String(Math.max(1, sequence)).padStart(3, "0")}`;
+}
+
+export function buildOverdraftReferenceIndex(records: OverdraftRecord[]): Map<string, string> {
+  const sorted = [...records].sort((left, right) => {
+    const leftTime = toSafeDate(left.dateIssued).getTime();
+    const rightTime = toSafeDate(right.dateIssued).getTime();
+    if (leftTime !== rightTime) return leftTime - rightTime;
+    return left.id.localeCompare(right.id);
+  });
+
+  const dailySequence = new Map<string, number>();
+  const references = new Map<string, string>();
+
+  for (const record of sorted) {
+    const dateStamp = toReferenceDateStamp(record.dateIssued);
+    const sequence = (dailySequence.get(dateStamp) || 0) + 1;
+    dailySequence.set(dateStamp, sequence);
+    references.set(record.id, formatOverdraftReference(dateStamp, sequence));
+  }
+
+  return references;
+}
+
+export function buildOverdraftReference(record: OverdraftRecord, records: OverdraftRecord[] = [record]): string {
+  const references = buildOverdraftReferenceIndex(records);
+  const resolved = references.get(record.id);
+  if (resolved) return resolved;
+  return formatOverdraftReference(toReferenceDateStamp(record.dateIssued), 1);
+}
+
+export function openOverdraftPrintWindow(): Window | null {
+  if (typeof window === "undefined") return null;
+  const opened = window.open("", "_blank", "width=960,height=1080");
+  if (!opened) return null;
+
+  opened.document.open();
+  opened.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preparing Overdraft Letter...</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: "Manrope", "Segoe UI", Arial, sans-serif;
+      color: #163968;
+      background: linear-gradient(180deg, #f6f9ff, #e9f1ff);
+    }
+    .chip {
+      border: 1px solid #c8daef;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px 16px;
+      box-shadow: 0 8px 24px rgba(13, 47, 93, 0.12);
+      font-size: 14px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="chip">Preparing letter for print...</div>
+</body>
+</html>`);
+  opened.document.close();
+  return opened;
 }
 
 export function printOverdraftLetter(input: PrintOverdraftLetterInput): boolean {
   if (typeof window === "undefined") return false;
 
-  const referenceNumber = buildOverdraftReference(input.record);
+  const referenceNumber = input.referenceNumber || buildOverdraftReference(input.record);
   const issuedDateLabel = formatLongDate(input.record.dateIssued);
   const collectionMonth = formatCollectionMonth(input.record.dateIssued);
   const purpose = input.record.reason.trim() || "General overdraft support";
-  const opened = window.open("", "_blank", "noopener,noreferrer,width=960,height=1080");
+  const opened = input.printWindow || window.open("", "_blank", "width=960,height=1080");
   if (!opened) {
     return false;
   }
@@ -259,19 +329,27 @@ export function printOverdraftLetter(input: PrintOverdraftLetterInput): boolean 
       </div>
     </section>
   </main>
-  <script>
-    window.addEventListener("load", function () {
-      setTimeout(function () {
-        window.print();
-      }, 120);
-    });
-  </script>
 </body>
 </html>`;
 
   opened.document.open();
   opened.document.write(html);
   opened.document.close();
-  opened.focus();
+
+  const triggerPrint = () => {
+    try {
+      opened.focus();
+      opened.print();
+    } catch {
+      // Ignore print errors; caller already has a success/failure signal.
+    }
+  };
+
+  if (opened.document.readyState === "complete") {
+    setTimeout(triggerPrint, 150);
+  } else {
+    opened.addEventListener("load", () => setTimeout(triggerPrint, 150), { once: true });
+  }
+
   return true;
 }

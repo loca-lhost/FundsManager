@@ -19,12 +19,16 @@ import {
   deleteContribution,
   fetchAvailableYears,
   fetchMembersWithContributions,
-  setMemberArchived,
   updateMember,
   upsertContribution,
 } from "@/lib/data-service";
 import { currency, formatDateTime } from "@/lib/format";
-import { buildOverdraftReference, printOverdraftLetter } from "@/lib/overdraft-letter";
+import {
+  buildOverdraftReference,
+  buildOverdraftReferenceIndex,
+  openOverdraftPrintWindow,
+  printOverdraftLetter,
+} from "@/lib/overdraft-letter";
 import { createOverdraft, fetchOverdrafts, isOpenOverdraftStatus, repayOverdraft } from "@/lib/overdraft-service";
 import type { SessionUser } from "@/types/auth";
 import type { ActivityLog, MemberContribution, MonthName, OverdraftRecord } from "@/types/funds";
@@ -111,6 +115,7 @@ export default function FundsManagerApp() {
       return item.memberName.toLowerCase().includes(term) || reason.includes(term) || status.includes(term);
     });
   }, [yearOverdrafts, search]);
+  const overdraftReferenceById = useMemo(() => buildOverdraftReferenceIndex(overdrafts), [overdrafts]);
 
   const openOverdraftCount = useMemo(
     () => yearOverdrafts.filter((item) => isOpenOverdraftStatus(item.status)).length,
@@ -119,6 +124,10 @@ export default function FundsManagerApp() {
   const activeMemberCount = useMemo(
     () => members.filter((item) => !item.isArchived).length,
     [members],
+  );
+  const getOverdraftReference = useCallback(
+    (record: OverdraftRecord) => overdraftReferenceById.get(record.id) || buildOverdraftReference(record, overdrafts),
+    [overdraftReferenceById, overdrafts],
   );
 
   const appendActivity = useCallback((payload: Omit<ActivityLog, "id" | "timestamp">) => {
@@ -323,61 +332,6 @@ export default function FundsManagerApp() {
     }
   }
 
-  async function handleArchiveMember(memberId: string) {
-    if (!canAdmin) return;
-
-    const hasActiveOverdraft = overdrafts.some((item) => item.memberId === memberId && isOpenOverdraftStatus(item.status));
-    if (hasActiveOverdraft) {
-      setNotice({
-        type: "error",
-        message: "Cannot archive member with active overdrafts. Record repayments first.",
-      });
-      return;
-    }
-
-    if (!window.confirm("Archive this member?")) return;
-
-    setSavingAction(true);
-    try {
-      await setMemberArchived(memberId, true);
-      setNotice({ type: "success", message: "Member archived." });
-      appendActivity({
-        action: "Member",
-        detail: "Archived a member account",
-        icon: "fa-box-archive",
-        tone: "warning",
-      });
-      await loadYearData();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to archive member";
-      setNotice({ type: "error", message });
-    } finally {
-      setSavingAction(false);
-    }
-  }
-
-  async function handleRestoreMember(memberId: string) {
-    if (!canAdmin) return;
-
-    setSavingAction(true);
-    try {
-      await setMemberArchived(memberId, false);
-      setNotice({ type: "success", message: "Member restored." });
-      appendActivity({
-        action: "Member",
-        detail: "Restored a member account",
-        icon: "fa-rotate-left",
-        tone: "success",
-      });
-      await loadYearData();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to restore member";
-      setNotice({ type: "error", message });
-    } finally {
-      setSavingAction(false);
-    }
-  }
-
   async function handleSaveContribution(payload: { memberId: string; month: MonthName; amount: number }) {
     if (!canManage) return;
 
@@ -433,6 +387,7 @@ export default function FundsManagerApp() {
     }
 
     setSavingAction(true);
+    const stagedPrintWindow = openOverdraftPrintWindow();
     try {
       const created = await createOverdraft({
         year: selectedYear,
@@ -441,13 +396,15 @@ export default function FundsManagerApp() {
         amount: payload.amount,
         reason: payload.reason,
       });
-      const reference = buildOverdraftReference(created);
+      const reference = buildOverdraftReference(created, [...overdrafts, created]);
       const opened = printOverdraftLetter({
         record: created,
+        referenceNumber: reference,
         memberAccountNumber: targetMember.accountNumber,
         managerName: sessionUser?.fullName || "Fund Manager",
         organizationName: "KABsTech Fund",
         printedBy: sessionUser?.fullName || "",
+        printWindow: stagedPrintWindow,
       });
       setShowIssueOverdraftModal(false);
       setNotice({
@@ -464,6 +421,7 @@ export default function FundsManagerApp() {
       });
       await loadYearData();
     } catch (error) {
+      stagedPrintWindow?.close();
       const message = error instanceof Error ? error.message : "Failed to issue overdraft";
       setNotice({ type: "error", message });
     } finally {
@@ -497,9 +455,10 @@ export default function FundsManagerApp() {
 
   function handlePrintOverdraftLetter(record: OverdraftRecord) {
     const member = members.find((item) => item.id === record.memberId);
-    const reference = buildOverdraftReference(record);
+    const reference = getOverdraftReference(record);
     const opened = printOverdraftLetter({
       record,
+      referenceNumber: reference,
       memberAccountNumber: member?.accountNumber || "N/A",
       managerName: sessionUser?.fullName || "Fund Manager",
       organizationName: "KABsTech Fund",
@@ -535,7 +494,19 @@ export default function FundsManagerApp() {
 
   return (
     <div id="appContent" className="app-shell">
-      <AppHeader onLogout={handleLogout} role={formatRoleLabel(sessionUser.role)} userName={sessionUser.fullName.split(" ")[0]} />
+      <AppHeader
+        activeView={activeView}
+        canAdmin={canAdmin}
+        canManage={canManage}
+        onLogout={handleLogout}
+        onOpenAddMemberModal={openCreateMemberModal}
+        onOpenContributionModal={() => setShowContributionModal(true)}
+        onOpenDividendModal={() => setShowDividendModal(true)}
+        onToggleArchived={() => setShowArchived((current) => !current)}
+        role={formatRoleLabel(sessionUser.role)}
+        showArchived={showArchived}
+        userName={sessionUser.fullName.split(" ")[0]}
+      />
 
       <main className="container">
         <section className="hero-panel">
@@ -580,20 +551,12 @@ export default function FundsManagerApp() {
         </div>
 
         <Toolbar
-          canAdmin={canAdmin}
-          canManage={canManage}
           onMonthChange={setSelectedMonth}
-          onOpenAddMemberModal={openCreateMemberModal}
-          onOpenContributionModal={() => setShowContributionModal(true)}
-          onOpenDividendModal={() => setShowDividendModal(true)}
-          onOpenIssueOverdraftModal={() => setShowIssueOverdraftModal(true)}
           onSearch={setSearch}
-          onToggleArchived={() => setShowArchived((current) => !current)}
           onYearChange={setSelectedYear}
           search={search}
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
-          showArchived={showArchived}
           yearOptions={yearOptions}
         />
 
@@ -605,17 +568,15 @@ export default function FundsManagerApp() {
 
         {activeView === "contributions" ? (
           <ContributionsTable
-            canAdmin={canAdmin}
             canManage={canManage}
             loading={loadingMembers}
             members={visibleMembers}
-            onArchiveMember={handleArchiveMember}
             onEditMember={openEditMemberModal}
-            onRestoreMember={handleRestoreMember}
           />
         ) : (
           <OverdraftSection
             canManage={canManage}
+            getReference={getOverdraftReference}
             loading={loadingOverdrafts}
             onOpenIssueModal={() => setShowIssueOverdraftModal(true)}
             onPrintLetter={handlePrintOverdraftLetter}
