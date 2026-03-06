@@ -137,8 +137,17 @@ export default function FundsManagerApp() {
         fetchOverdrafts(),
       ]);
 
+      const memberNameById = new Map(liveMembers.map((member) => [member.id, member.name]));
+      const enrichedOverdrafts = overdraftRecords.map((record) => ({
+        ...record,
+        memberName:
+          record.memberName && record.memberName !== "Unknown Member"
+            ? record.memberName
+            : memberNameById.get(record.memberId) || "Unknown Member",
+      }));
+
       setMembers(liveMembers);
-      setOverdrafts(overdraftRecords);
+      setOverdrafts(enrichedOverdrafts);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to load application data";
       setMembers([]);

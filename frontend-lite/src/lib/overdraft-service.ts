@@ -198,17 +198,25 @@ export async function createOverdraft(input: {
     dateTaken: issuedAt,
   };
 
-  const payloadCandidates: Record<string, unknown>[] = [
+  const payloadQueue: Record<string, unknown>[] = [
     { ...basePayload, year: issueYear, dateTaken: issuedAt },
     { ...basePayload, year: issueYear },
     { ...basePayload, year: String(issueYear), dateTaken: issuedAt },
     { ...basePayload, year: String(issueYear) },
   ];
+  const seenPayloads = new Set<string>();
 
   let created: OverdraftDocument | null = null;
   let lastError: unknown = null;
 
-  for (const candidate of payloadCandidates) {
+  while (payloadQueue.length > 0) {
+    const candidate = payloadQueue.shift() as Record<string, unknown>;
+    const signature = JSON.stringify(candidate);
+    if (seenPayloads.has(signature)) {
+      continue;
+    }
+    seenPayloads.add(signature);
+
     try {
       created = (await appwriteDatabases.createDocument(
         APPWRITE_DB_ID,
@@ -219,8 +227,21 @@ export async function createOverdraft(input: {
       break;
     } catch (error) {
       lastError = error;
-      const message = String(error instanceof Error ? error.message : error || "").toLowerCase();
+      const rawMessage = String(error instanceof Error ? error.message : error || "");
+      const message = rawMessage.toLowerCase();
+      const unknownAttrMatch = rawMessage.match(/Unknown attribute:\s*"([^"]+)"/i);
+      if (unknownAttrMatch?.[1]) {
+        const unknownAttr = unknownAttrMatch[1];
+        if (unknownAttr in candidate) {
+          const sanitized = { ...candidate };
+          Reflect.deleteProperty(sanitized, unknownAttr);
+          payloadQueue.unshift(sanitized);
+          continue;
+        }
+      }
+
       const schemaIssue =
+        message.includes("membername") ||
         message.includes("year") ||
         message.includes("datetaken") ||
         message.includes("invalid document structure") ||
