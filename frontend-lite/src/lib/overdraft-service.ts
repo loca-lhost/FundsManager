@@ -9,6 +9,7 @@ const OVERDRAFT_INTEREST_RATE = 0.02;
 const OPEN_STATUSES: OverdraftStatus[] = ["pending", "approved"];
 
 type OverdraftDocument = Models.Document & {
+  year?: number | string;
   memberId?: string;
   memberName?: string;
   amount?: number | string;
@@ -62,9 +63,11 @@ function toRecord(doc: OverdraftDocument): OverdraftRecord {
   const totalRepayment = Number.isFinite(totalRepaymentRaw) ? toMoney(totalRepaymentRaw) : roundMoney(amount + interest);
   const amountPaid = Math.min(totalRepayment, Math.max(0, toMoney(doc.amountPaid)));
   const dateIssued = resolveIssuedAt(doc.dateIssued || doc.dateTaken, doc.$createdAt || new Date().toISOString());
+  const year = Number.parseInt(String(doc.year ?? new Date(dateIssued).getFullYear()), 10);
 
   return {
     id: doc.$id,
+    year: Number.isFinite(year) ? year : new Date(dateIssued).getFullYear(),
     memberId: String(doc.memberId || ""),
     memberName: String(doc.memberName || "Unknown Member"),
     amount,
@@ -165,6 +168,7 @@ export async function fetchOverdrafts(): Promise<OverdraftRecord[]> {
 }
 
 export async function createOverdraft(input: {
+  year?: number;
   memberId: string;
   memberName: string;
   amount: number;
@@ -179,8 +183,10 @@ export async function createOverdraft(input: {
   const interest = computeInterest(principal);
   const totalRepayment = roundMoney(principal + interest);
   const issuedAt = resolveIssuedAt(input.dateIssued, new Date().toISOString());
+  const issueYear = Number.isFinite(input.year) ? Number(input.year) : new Date(issuedAt).getFullYear();
 
   const payload = {
+    year: issueYear,
     memberId: input.memberId,
     memberName: input.memberName,
     amount: principal,

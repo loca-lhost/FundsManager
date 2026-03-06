@@ -82,7 +82,11 @@ export default function FundsManagerApp() {
   const canManage = sessionUser ? isManagerRole(sessionUser.role) : false;
   const canAdmin = sessionUser ? isAdminRole(sessionUser.role) : false;
 
-  const seededLogs = useMemo(() => seedOverdraftActivity(overdrafts), [overdrafts]);
+  const yearOverdrafts = useMemo(
+    () => overdrafts.filter((item) => item.year === selectedYear),
+    [overdrafts, selectedYear],
+  );
+  const seededLogs = useMemo(() => seedOverdraftActivity(yearOverdrafts), [yearOverdrafts]);
   const activityLogs = useMemo(() => [...manualActivityLogs, ...seededLogs].slice(0, 8), [manualActivityLogs, seededLogs]);
 
   const visibleMembers = useMemo(() => {
@@ -98,17 +102,18 @@ export default function FundsManagerApp() {
 
   const visibleOverdrafts = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return overdrafts;
-    return overdrafts.filter((item) => {
+    const yearFiltered = yearOverdrafts;
+    if (!term) return yearFiltered;
+    return yearFiltered.filter((item) => {
       const status = item.status.toLowerCase();
       const reason = item.reason.toLowerCase();
       return item.memberName.toLowerCase().includes(term) || reason.includes(term) || status.includes(term);
     });
-  }, [overdrafts, search]);
+  }, [yearOverdrafts, search]);
 
   const openOverdraftCount = useMemo(
-    () => overdrafts.filter((item) => isOpenOverdraftStatus(item.status)).length,
-    [overdrafts],
+    () => yearOverdrafts.filter((item) => isOpenOverdraftStatus(item.status)).length,
+    [yearOverdrafts],
   );
 
   const appendActivity = useCallback((payload: Omit<ActivityLog, "id" | "timestamp">) => {
@@ -416,6 +421,7 @@ export default function FundsManagerApp() {
     setSavingAction(true);
     try {
       await createOverdraft({
+        year: selectedYear,
         memberId: payload.memberId,
         memberName: targetMember.name,
         amount: payload.amount,
@@ -551,12 +557,12 @@ export default function FundsManagerApp() {
         )}
 
         <div className="dashboard-grid">
-          <StatsCards members={members} overdrafts={overdrafts} />
+          <StatsCards members={members} overdrafts={yearOverdrafts} />
           <RecentActivity logs={activityLogs} />
         </div>
       </main>
 
-      <DividendModal members={members} onClose={() => setShowDividendModal(false)} open={showDividendModal} overdrafts={overdrafts} />
+      <DividendModal members={members} onClose={() => setShowDividendModal(false)} open={showDividendModal} overdrafts={yearOverdrafts} />
 
       {showMemberModal && (
         <MemberModal

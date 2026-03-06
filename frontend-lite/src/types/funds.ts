@@ -24,6 +24,7 @@ export type OverdraftStatus = "pending" | "approved" | "rejected" | "settled";
 
 export interface OverdraftRecord {
   id: string;
+  year: number;
   memberId: string;
   memberName: string;
   amount: number;
