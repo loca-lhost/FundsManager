@@ -50,6 +50,7 @@ function seedOverdraftActivity(records: OverdraftRecord[]): ActivityLog[] {
 }
 
 export default function FundsManagerApp() {
+  const [activeView, setActiveView] = useState<"contributions" | "overdrafts">("contributions");
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState("");
@@ -104,6 +105,11 @@ export default function FundsManagerApp() {
       return item.memberName.toLowerCase().includes(term) || reason.includes(term) || status.includes(term);
     });
   }, [overdrafts, search]);
+
+  const openOverdraftCount = useMemo(
+    () => overdrafts.filter((item) => isOpenOverdraftStatus(item.status)).length,
+    [overdrafts],
+  );
 
   const appendActivity = useCallback((payload: Omit<ActivityLog, "id" | "timestamp">) => {
     const event: ActivityLog = {
@@ -481,8 +487,19 @@ export default function FundsManagerApp() {
 
       <main className="container">
         <div className="tabs-container">
-          <button className="tab-btn active" type="button">
-            Operations Dashboard
+          <button
+            className={`tab-btn ${activeView === "contributions" ? "active" : ""}`}
+            onClick={() => setActiveView("contributions")}
+            type="button"
+          >
+            Contributions
+          </button>
+          <button
+            className={`tab-btn ${activeView === "overdrafts" ? "active" : ""}`}
+            onClick={() => setActiveView("overdrafts")}
+            type="button"
+          >
+            Overdrafts ({openOverdraftCount})
           </button>
         </div>
 
@@ -510,26 +527,28 @@ export default function FundsManagerApp() {
           </div>
         )}
 
-        <ContributionsTable
-          canAdmin={canAdmin}
-          canManage={canManage}
-          loading={loadingMembers}
-          members={visibleMembers}
-          onArchiveMember={handleArchiveMember}
-          onEditMember={openEditMemberModal}
-          onRestoreMember={handleRestoreMember}
-        />
-
-        <OverdraftSection
-          canManage={canManage}
-          loading={loadingOverdrafts}
-          onOpenIssueModal={() => setShowIssueOverdraftModal(true)}
-          onOpenRepayModal={(record) => {
-            setRepayingOverdraft(record);
-            setShowRepayOverdraftModal(true);
-          }}
-          overdrafts={visibleOverdrafts}
-        />
+        {activeView === "contributions" ? (
+          <ContributionsTable
+            canAdmin={canAdmin}
+            canManage={canManage}
+            loading={loadingMembers}
+            members={visibleMembers}
+            onArchiveMember={handleArchiveMember}
+            onEditMember={openEditMemberModal}
+            onRestoreMember={handleRestoreMember}
+          />
+        ) : (
+          <OverdraftSection
+            canManage={canManage}
+            loading={loadingOverdrafts}
+            onOpenIssueModal={() => setShowIssueOverdraftModal(true)}
+            onOpenRepayModal={(record) => {
+              setRepayingOverdraft(record);
+              setShowRepayOverdraftModal(true);
+            }}
+            overdrafts={visibleOverdrafts}
+          />
+        )}
 
         <div className="dashboard-grid">
           <StatsCards members={members} overdrafts={overdrafts} />
