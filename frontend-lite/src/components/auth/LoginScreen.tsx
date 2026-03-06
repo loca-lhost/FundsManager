@@ -73,7 +73,9 @@ export default function LoginScreen({ defaultEmail = "", loading, errorMessage, 
           </div>
 
           {errorMessage && (
-            <div className="notice error login-error">{errorMessage}</div>
+            <div aria-live="assertive" className="notice error login-error" role="alert">
+              {errorMessage}
+            </div>
           )}
 
           <div className="login-action">

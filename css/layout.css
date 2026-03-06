@@ -123,6 +123,11 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
+.header-profile:focus-visible {
+    outline: 3px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+}
+
 .profile-avatar {
     width: 32px;
     height: 32px;
@@ -188,7 +193,7 @@
 
 .search-box input {
     width: 100%;
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    padding: 0.75rem 2.75rem 0.75rem 2.75rem;
     border: 2px solid var(--brand-border);
     border-radius: 10px;
     font-size: 1rem;
@@ -207,6 +212,29 @@
     top: 50%;
     transform: translateY(-50%);
     color: #999;
+}
+
+.search-clear {
+    position: absolute;
+    right: 0.6rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.2);
+    color: var(--theme-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.search-clear:hover {
+    background: rgba(148, 163, 184, 0.34);
+    color: var(--brand-dark);
 }
 
 /* ---- Tabs ---- */

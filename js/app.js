@@ -77,7 +77,9 @@ function renderYearSelector() {
 }
 
 async function changeYear(year) {
-    currentYear = parseInt(year);
+    const parsedYear = Number.parseInt(String(year), 10);
+    if (!Number.isFinite(parsedYear)) return;
+    currentYear = parsedYear;
     loadYearData(currentYear);
 }
 
@@ -101,9 +103,14 @@ async function loadYearData(year, silent = false) {
         const memberDocs = await fetchAllDocuments('members');
 
         // Load contributions for the selected year
-        const contribDocs = await fetchAllDocuments('contributions', [
+        let contribDocs = await fetchAllDocuments('contributions', [
             Appwrite.Query.equal('year', year)
         ]);
+        if (contribDocs.length === 0) {
+            contribDocs = await fetchAllDocuments('contributions', [
+                Appwrite.Query.equal('year', String(year))
+            ]);
+        }
 
         // Build contribution map: memberId -> { month: amount }
         const contribMap = {};
@@ -218,6 +225,7 @@ function bootstrap() {
     setupDropdownClose();
     setupInactivityListeners();
     setupToolbarInteractions();
+    setupModalAccessibility();
     setupPullToRefresh();
     switchTab('contributions');
 

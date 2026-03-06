@@ -289,22 +289,17 @@ function auditLogNextPage() {
     changeAuditPage(1);
 }
 
-function downloadCsv(filename, rows) {
-    const csv = rows.map(cols => cols
-        .map(value => `"${String(value ?? '').replace(/"/g, '""')}"`)
-        .join(','))
-        .join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+function downloadXlsx(filename, rows, sheetName = 'Audit Log') {
+    if (typeof XLSX === 'undefined') {
+        throw new Error('Excel library not loaded');
+    }
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, filename);
 }
 
-async function exportAuditLogsCSV() {
+async function exportAuditLogsXLSX() {
     if (!isAdmin()) {
         showToast('Permission Denied', 'Only admins can export audit logs', 'error');
         return;
@@ -326,8 +321,12 @@ async function exportAuditLogsCSV() {
         ]);
     });
 
-    downloadCsv(`AuditLogs_${new Date().toISOString().split('T')[0]}.csv`, rows);
-    showToast('Success', `Exported ${auditFilteredLogs.length} audit entries`, 'success');
+    try {
+        downloadXlsx(`AuditLogs_Filtered_${new Date().toISOString().split('T')[0]}.xlsx`, rows, 'Filtered Audit Logs');
+        showToast('Success', `Exported ${auditFilteredLogs.length} audit entries`, 'success');
+    } catch (e) {
+        showToast('Error', e.message || 'Failed to export audit logs', 'error');
+    }
 }
 
 async function exportAuditLog() {
@@ -339,7 +338,7 @@ async function exportAuditLog() {
     await ensureAuditLogsLoaded();
 
     if (typeof XLSX === 'undefined') {
-        exportAuditLogsCSV();
+        showToast('Error', 'Excel library not loaded', 'error');
         return;
     }
 

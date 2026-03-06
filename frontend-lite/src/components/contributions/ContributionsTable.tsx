@@ -141,7 +141,7 @@ export default function ContributionsTable({
         <>
           <div className="contributions-layout">
             <div className="table-wrapper contributions-table-pane">
-              <table id="dataTable" className="contributions-table">
+              <table className="contributions-table stacked-table" id="dataTable">
                 <thead>
                   <tr>
                     <th>Member Name</th>
@@ -159,7 +159,19 @@ export default function ContributionsTable({
                   {members.map((member) => {
                     const isSelected = selectedMember?.id === member.id;
                     return (
-                      <tr className={isSelected ? "selected-row" : ""} key={member.id} onClick={() => setSelectedMemberId(member.id)}>
+                      <tr
+                        aria-selected={isSelected}
+                        className={isSelected ? "selected-row" : ""}
+                        key={member.id}
+                        onClick={() => setSelectedMemberId(member.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedMemberId(member.id);
+                          }
+                        }}
+                        tabIndex={0}
+                      >
                         <td className="font-bold" data-label="Member Name">
                           {canManage ? (
                             <button

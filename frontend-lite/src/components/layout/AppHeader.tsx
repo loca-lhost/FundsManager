@@ -29,6 +29,8 @@ export default function AppHeader({
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (!profileOpen) return;
+
     function handleOutsideClick(event: MouseEvent) {
       if (!containerRef.current) return;
       const target = event.target as Node;
@@ -37,9 +39,19 @@ export default function AppHeader({
       }
     }
 
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setProfileOpen(false);
+      }
+    }
+
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [profileOpen]);
 
   return (
     <header className="header">
@@ -56,32 +68,28 @@ export default function AppHeader({
 
         <div className="header-actions">
           <div className="header-role-chip">{role}</div>
-          <div
-            aria-expanded={profileOpen}
-            className="header-profile"
-            onClick={() => setProfileOpen((current) => !current)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setProfileOpen((current) => !current);
-              }
-            }}
-            ref={containerRef}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="profile-avatar">{userName.charAt(0)}</div>
-            <div className="profile-name">{userName}</div>
-            <i className="fas fa-chevron-down header-chevron" />
+          <div className="header-profile" ref={containerRef}>
+            <button
+              aria-controls="profileMenu"
+              aria-expanded={profileOpen}
+              aria-haspopup="menu"
+              className={`header-profile-trigger ${profileOpen ? "open" : ""}`}
+              onClick={() => setProfileOpen((current) => !current)}
+              type="button"
+            >
+              <div className="profile-avatar">{userName.trim().charAt(0).toUpperCase() || "?"}</div>
+              <div className="profile-name">{userName}</div>
+              <i className="fas fa-chevron-down header-chevron" />
+            </button>
 
-            <div className={`dropdown-content profile-dropdown ${profileOpen ? "show" : ""}`}>
+            <div className={`dropdown-content profile-dropdown ${profileOpen ? "show" : ""}`} id="profileMenu" role="menu">
               <div className="profile-header">
                 <div className="profile-header-name">{userName}</div>
                 <div className="profile-header-role">{role}</div>
               </div>
 
               <div className="dropdown-section-label">Account</div>
-              <button className="dropdown-item" disabled type="button">
+              <button className="dropdown-item" disabled role="menuitem" type="button">
                 <i className="fas fa-key" /> Change Password (Coming soon)
               </button>
 
@@ -93,11 +101,11 @@ export default function AppHeader({
                   {canManage && (
                     <button
                       className="dropdown-item"
-                      onClick={(event) => {
-                        event.stopPropagation();
+                      onClick={() => {
                         onOpenAddMemberModal();
                         setProfileOpen(false);
                       }}
+                      role="menuitem"
                       type="button"
                     >
                       <i className="fas fa-user-plus text-success" /> Add Member
@@ -107,11 +115,11 @@ export default function AppHeader({
                   {canManage && (
                     <button
                       className="dropdown-item"
-                      onClick={(event) => {
-                        event.stopPropagation();
+                      onClick={() => {
                         onOpenDividendModal();
                         setProfileOpen(false);
                       }}
+                      role="menuitem"
                       type="button"
                     >
                       <i className="fas fa-calculator text-success" /> Calculate Dividends
@@ -121,11 +129,11 @@ export default function AppHeader({
                   {canAdmin && (
                     <button
                       className="dropdown-item"
-                      onClick={(event) => {
-                        event.stopPropagation();
+                      onClick={() => {
                         onToggleArchived();
                         setProfileOpen(false);
                       }}
+                      role="menuitem"
                       type="button"
                     >
                       <i className="fas fa-archive text-muted" /> {showArchived ? "Hide Archived" : "Show Archived"}
@@ -137,10 +145,11 @@ export default function AppHeader({
               <div className="dropdown-divider" />
               <button
                 className="dropdown-item"
-                onClick={(event) => {
-                  event.stopPropagation();
+                onClick={() => {
+                  setProfileOpen(false);
                   void onLogout();
                 }}
+                role="menuitem"
                 type="button"
               >
                 <i className="fas fa-sign-out-alt text-danger" /> Logout

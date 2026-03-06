@@ -89,15 +89,17 @@
             </div>
             <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-input" id="loginUsername" required placeholder="Enter email">
+                    <label class="form-label" for="loginUsername">Email</label>
+                    <input type="email" class="form-input" id="loginUsername" required placeholder="Enter email"
+                        autocomplete="username">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Password</label>
+                    <label class="form-label" for="loginPassword">Password</label>
                     <div class="password-wrapper">
                         <input type="password" class="form-input" id="loginPassword" required
+                            autocomplete="current-password"
                             placeholder="Enter password">
-                        <button type="button" class="password-toggle"
+                        <button type="button" class="password-toggle" aria-label="Show or hide password"
                             onclick="togglePasswordVisibility('loginPassword')"><i class="fas fa-eye"></i></button>
                     </div>
                     <div
@@ -129,6 +131,10 @@
                     data-label="Record Contribution">
                     <i class="fas fa-hand-holding-usd"></i>
                 </button>
+                <button class="fab-action-btn" onclick="vibrate(); openIssueOverdraftModal(); toggleFab()"
+                    data-label="Issue Overdraft">
+                    <i class="fas fa-hand-holding-heart"></i>
+                </button>
                 <button class="fab-action-btn" onclick="vibrate(); openAddMemberModal(); toggleFab()"
                     data-label="Add Member">
                     <i class="fas fa-user-plus"></i>
@@ -145,6 +151,10 @@
                 <i class="fas fa-hand-holding-usd"></i>
                 <span>Contributions</span>
             </div>
+            <div class="bottom-nav-item" onclick="switchTab('overdrafts')" id="bottom-nav-overdrafts">
+                <i class="fas fa-hand-holding-heart"></i>
+                <span>Overdrafts</span>
+            </div>
         </div>
 
         <!-- Header -->
@@ -160,7 +170,9 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <div class="header-profile" onclick="toggleProfileDropdown()">
+                    <div class="header-profile" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false"
+                        onclick="toggleProfileDropdown()"
+                        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleProfileDropdown();}">
                         <div class="profile-avatar" id="headerAvatar">U</div>
                         <div class="profile-name" id="headerUsername">User</div>
                         <i class="fas fa-chevron-down" style="font-size: 0.9rem; color: var(--theme-text-secondary);"></i>
@@ -217,19 +229,27 @@
             <div class="tabs-container">
                 <button class="tab-btn active" onclick="switchTab('contributions')"
                     id="tab-contributions">Contributions</button>
+                <button class="tab-btn" onclick="switchTab('overdrafts')" id="tab-overdrafts">Overdrafts</button>
             </div>
 
             <!-- Toolbar -->
             <div class="toolbar">
                 <div class="toolbar-left">
                     <div class="search-box">
+                        <label class="sr-only" for="searchInput">Search members</label>
                         <i class="fas fa-search"></i>
-                        <input type="text" id="searchInput" placeholder="Search...">
+                        <input type="text" id="searchInput" placeholder="Search members or account number..."
+                            aria-label="Search members or account number">
+                        <button type="button" class="search-clear" id="searchClear" aria-label="Clear search">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
+                    <label class="sr-only" for="yearFilter">Filter year</label>
                     <select class="form-select" id="yearFilter" style="width: auto; min-width: 90px;"
                         onchange="changeYear(this.value)">
                         <!-- Populated by JS -->
                     </select>
+                    <label class="sr-only" for="monthFilter">Filter month</label>
                     <select class="form-select" id="monthFilter" style="width: auto; min-width: 120px;">
                         <option value="">All Months</option>
                         <option value="January">January</option>
@@ -253,9 +273,13 @@
                     <button class="btn btn-primary" id="btn-record-contribution" onclick="openBulkContributionModal()">
                         <i class="fas fa-hand-holding-usd"></i> Record Contribution
                     </button>
+                    <button class="btn btn-primary hidden" id="btn-issue-overdraft" onclick="openIssueOverdraftModal()">
+                        <i class="fas fa-hand-holding-heart"></i> Issue Overdraft
+                    </button>
 
                     <div class="dropdown">
-                        <button class="btn btn-secondary dropdown-btn" id="btnOperations" onclick="toggleDropdown()">
+                        <button class="btn btn-secondary dropdown-btn" id="btnOperations" onclick="toggleDropdown()"
+                            aria-haspopup="menu" aria-expanded="false" aria-controls="actionsDropdown">
                             <i class="fas fa-ellipsis-v"></i> Operations
                         </button>
                         <div id="actionsDropdown" class="dropdown-content">
@@ -288,7 +312,7 @@
                 </div>
 
                 <div class="table-wrapper">
-                    <table id="dataTable">
+                    <table id="dataTable" class="stacked-table">
                         <thead>
                             <tr>
                                 <th>Member Name</th>
@@ -329,6 +353,34 @@
                                 <td class="amount-cell" id="grandTotal">0.00</td>
                             </tr>
                         </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Overdraft Table -->
+            <div class="table-container hidden" id="overdraftsSection">
+                <div class="table-header">
+                    <h2 class="table-title">Overdraft Management</h2>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="overdraftsTable" class="stacked-table">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th style="text-align: right;">Principal</th>
+                                <th style="text-align: right;">Interest (2%)</th>
+                                <th>Collection Month</th>
+                                <th style="text-align: right;">Total Repayment</th>
+                                <th style="text-align: right;">Paid</th>
+                                <th style="text-align: right;">Remaining</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overdraftsTableBody">
+                            <!-- Data populated by JavaScript -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -395,25 +447,26 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3 class="modal-title">Change Password</h3>
-                <button class="close-modal" onclick="closePasswordModal()">
+                <button type="button" class="close-modal" aria-label="Close password modal"
+                    onclick="closePasswordModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="passwordForm" onsubmit="handlePasswordChange(event)">
                 <div class="form-group">
-                    <label class="form-label">Current Password</label>
+                    <label class="form-label" for="currentPassword">Current Password</label>
                     <div class="password-wrapper">
                         <input type="password" class="form-input" id="currentPassword" required>
-                        <button type="button" class="password-toggle"
+                        <button type="button" class="password-toggle" aria-label="Show or hide current password"
                             onclick="togglePasswordVisibility('currentPassword')"><i class="fas fa-eye"></i></button>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">New Password</label>
+                    <label class="form-label" for="newPassword">New Password</label>
                     <input type="password" class="form-input" id="newPassword" required minlength="6">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Confirm Password</label>
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
                     <input type="password" class="form-input" id="confirmPassword" required minlength="6">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Update Password</button>
@@ -426,7 +479,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title">Record Contribution</h3>
-                <button class="close-modal" onclick="closeContributionModal()">
+                <button type="button" class="close-modal" aria-label="Close contribution modal"
+                    onclick="closeContributionModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -434,13 +488,13 @@
             <form id="contributionForm" onsubmit="saveContribution(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Member *</label>
+                        <label class="form-label" for="contribMember">Member *</label>
                         <select class="form-select" id="contribMember" required>
                             <option value="">Select Member</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Month *</label>
+                        <label class="form-label" for="contribMonth">Month *</label>
                         <select class="form-select" id="contribMonth" required>
                             <option value="">Select Month</option>
                             <!-- Populated via JS -->
@@ -448,7 +502,7 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Amount (GH&#x20B5;) *</label>
+                    <label class="form-label" for="contribAmount">Amount (GH&#x20B5;) *</label>
                     <input type="number" class="form-input" id="contribAmount" required min="0" step="0.01">
                 </div>
 
@@ -468,12 +522,146 @@
         </div>
     </div>
 
+    <!-- Issue Overdraft Modal -->
+    <div class="modal" id="issueOverdraftModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Issue Overdraft</h3>
+                <button type="button" class="close-modal" aria-label="Close issue overdraft modal"
+                    onclick="closeIssueOverdraftModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="issueOverdraftForm" onsubmit="issueOverdraft(event)">
+                <div class="form-group">
+                    <label class="form-label" for="odMember">Member *</label>
+                    <select class="form-select" id="odMember" required>
+                        <option value="">Select Member</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="odAmount">Principal Amount (GH&#x20B5;) *</label>
+                        <input type="number" class="form-input" id="odAmount" required min="0.01" step="0.01"
+                            inputmode="decimal" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interest Rate</label>
+                        <input type="text" class="form-input" value="2%" readonly>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="odReason">Reason (Optional)</label>
+                    <textarea class="form-input" id="odReason" rows="3"
+                        placeholder="Enter a reason for this overdraft"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" id="issueOverdraftSubmit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save"></i> <span class="btn-text">Issue Overdraft</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeIssueOverdraftModal()"
+                        style="flex: 1;">
+                        <i class="fas fa-times"></i> <span class="btn-text">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Repay Overdraft Modal -->
+    <div class="modal" id="repayOverdraftModal">
+        <div class="modal-content" style="max-width: 720px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Repay Overdraft</h3>
+                <button type="button" class="close-modal" aria-label="Close repay overdraft modal"
+                    onclick="closeRepayOverdraftModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="repayOverdraftForm" onsubmit="repayOverdraft(event)">
+                <input type="hidden" id="repayOverdraftId">
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Member</label>
+                        <div id="repayMemberName" class="form-input" style="display: flex; align-items: center;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Collection Month</label>
+                        <div id="repayCollectionMonth" class="form-input" style="display: flex; align-items: center;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Principal</label>
+                        <div id="repayPrincipal" class="form-input amount-cell"
+                            style="display: flex; align-items: center; justify-content: flex-end;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interest</label>
+                        <div id="repayInterest" class="form-input amount-cell"
+                            style="display: flex; align-items: center; justify-content: flex-end;"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Total Due</label>
+                        <div id="repayTotalDue" class="form-input amount-cell"
+                            style="display: flex; align-items: center; justify-content: flex-end;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Amount Paid</label>
+                        <div id="repayAmountPaid" class="form-input amount-cell"
+                            style="display: flex; align-items: center; justify-content: flex-end;"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Collectible Now</label>
+                        <div id="repayCollectibleNow" class="form-input amount-cell"
+                            style="display: flex; align-items: center; justify-content: flex-end;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Remaining Balance</label>
+                        <div id="repayRemaining" class="form-input amount-cell"
+                            style="display: flex; align-items: center; justify-content: flex-end;"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="repayAmount">Repayment Amount (GH&#x20B5;) *</label>
+                    <input type="number" class="form-input" id="repayAmount" required min="0.01" step="0.01"
+                        inputmode="decimal" placeholder="0.00">
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" id="repayOverdraftSubmit" class="btn btn-success" style="flex: 1;">
+                        <i class="fas fa-money-bill-wave"></i> <span class="btn-text">Record Payment</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeRepayOverdraftModal()"
+                        style="flex: 1;">
+                        <i class="fas fa-times"></i> <span class="btn-text">Cancel</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Add/Edit Member Modal -->
     <div class="modal" id="memberModal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 class="modal-title" id="modalTitle">Add New Member</h3>
-                <button class="close-modal" onclick="closeMemberModal()">
+                <button type="button" class="close-modal" aria-label="Close member modal" onclick="closeMemberModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -481,12 +669,12 @@
             <form id="memberForm" onsubmit="saveMember(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Member Name *</label>
+                        <label class="form-label" for="memberName">Member Name *</label>
                         <input type="text" class="form-input" id="memberName" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Account Number *</label>
+                        <label class="form-label" for="accountNumber">Account Number *</label>
                         <input type="text" class="form-input" id="accountNumber" required pattern="[0-9]{1,13}"
                             inputmode="numeric" placeholder="Account Number (max 13 digits)" maxlength="13"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '')">
@@ -494,7 +682,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Initial Contribution (Optional)</label>
+                    <label class="form-label" for="initialMonth">Initial Contribution (Optional)</label>
                     <div class="form-row">
                         <select class="form-select" id="initialMonth">
                             <option value="">Select Month</option>
@@ -554,7 +742,8 @@
             <div class="modal-header">
                 <h3 class="modal-title" style="color: var(--brand-error);"><i class="fas fa-archive"></i> Confirm
                     Archive</h3>
-                <button class="close-modal" onclick="closeDeleteModal()">
+                <button type="button" class="close-modal" aria-label="Close archive confirmation modal"
+                    onclick="closeDeleteModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -578,7 +767,8 @@
             <div class="modal-header">
                 <h3 class="modal-title" style="color: var(--brand-success);"><i class="fas fa-trash-restore"></i>
                     Confirm Restore</h3>
-                <button class="close-modal" onclick="closeRestoreModal()">
+                <button type="button" class="close-modal" aria-label="Close restore confirmation modal"
+                    onclick="closeRestoreModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -600,7 +790,8 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3 class="modal-title">Confirm Archive User</h3>
-                <button class="close-modal" onclick="closeDeleteUserModal()">
+                <button type="button" class="close-modal" aria-label="Close user archive modal"
+                    onclick="closeDeleteUserModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -619,7 +810,7 @@
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h3 class="modal-title">System Audit Logs</h3>
-                <button class="close-modal" onclick="closeAuditModal()">
+                <button type="button" class="close-modal" aria-label="Close audit modal" onclick="closeAuditModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -641,8 +832,8 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem; margin-top: 1rem; justify-content: flex-end;">
-                    <button class="btn btn-secondary btn-sm" onclick="exportAuditLogsCSV()">
-                        <i class="fas fa-file-csv"></i> Export Filtered CSV
+                    <button class="btn btn-secondary btn-sm" onclick="exportAuditLogsXLSX()">
+                        <i class="fas fa-file-excel"></i> Export Filtered XLSX
                     </button>
                     <button class="btn btn-danger btn-sm" onclick="resetAuditLogs()">
                         <i class="fas fa-trash"></i> Clear Logs
@@ -666,6 +857,7 @@
                 style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--brand-border);">
                 <button class="btn btn-secondary btn-sm" id="auditPrevBtn" onclick="changeAuditPage(-1)" disabled><i
                         class="fas fa-chevron-left"></i> Previous</button>
+                <span id="auditPageInfo" style="color: var(--theme-text-secondary); font-size: 0.85rem;">Page 1 of 1</span>
                 <button class="btn btn-secondary btn-sm" id="auditNextBtn" onclick="changeAuditPage(1)" disabled>Next <i
                         class="fas fa-chevron-right"></i></button>
             </div>
@@ -677,7 +869,8 @@
         <div class="modal-content" style="max-width: 700px;">
             <div class="modal-header">
                 <h3 class="modal-title">Manage Users</h3>
-                <button class="close-modal" onclick="closeUserModal()">
+                <button type="button" class="close-modal" aria-label="Close user management modal"
+                    onclick="closeUserModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -728,13 +921,14 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3 class="modal-title">Reset Password</h3>
-                <button class="close-modal" onclick="closeForgotPasswordModal()">
+                <button type="button" class="close-modal" aria-label="Close forgot password modal"
+                    onclick="closeForgotPasswordModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <form id="forgotPasswordForm" onsubmit="handleForgotPassword(event)">
                 <div class="form-group">
-                    <label class="form-label">Email</label>
+                    <label class="form-label" for="fpEmail">Email</label>
                     <input type="email" class="form-input" id="fpEmail" required inputmode="email"
                         placeholder="Enter your registered email">
                 </div>
@@ -747,18 +941,18 @@
     </div>
 
     <!-- Reset Password Modal (Recovery) -->
-    <div class="modal" id="resetPasswordModal">
+    <div class="modal" id="resetPasswordModal" data-static="true">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3 class="modal-title">Set New Password</h3>
             </div>
             <form id="resetPasswordForm" onsubmit="handleCompleteRecovery(event)">
                 <div class="form-group">
-                    <label class="form-label">New Password</label>
+                    <label class="form-label" for="rpNewPassword">New Password</label>
                     <input type="password" class="form-input" id="rpNewPassword" required minlength="6">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Confirm Password</label>
+                    <label class="form-label" for="rpConfirmPassword">Confirm Password</label>
                     <input type="password" class="form-input" id="rpConfirmPassword" required minlength="6">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Update Password</button>
@@ -771,7 +965,7 @@
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
                 <h3 class="modal-title">Save This Recovery Code</h3>
-                <button class="close-modal"
+                <button type="button" class="close-modal" aria-label="Close recovery code modal"
                     onclick="document.getElementById('recoveryCodeModal').classList.remove('active')"><i
                         class="fas fa-times"></i></button>
             </div>
@@ -791,7 +985,8 @@
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <h3 class="modal-title">Member Profile</h3>
-                <button class="close-modal" onclick="closeMemberProfileModal()">
+                <button type="button" class="close-modal" aria-label="Close member profile modal"
+                    onclick="closeMemberProfileModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -806,7 +1001,8 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h3 class="modal-title">Application Settings</h3>
-                <button class="close-modal" onclick="closeSettingsModal()">
+                <button type="button" class="close-modal" aria-label="Close settings modal"
+                    onclick="closeSettingsModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -832,7 +1028,7 @@
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h3 class="modal-title">End of Year Dividend Calculation</h3>
-                <button class="close-modal" onclick="closeDividendModal()">
+                <button type="button" class="close-modal" aria-label="Close dividend modal" onclick="closeDividendModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -914,7 +1110,8 @@
         <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
                 <h3 class="modal-title">Data Management</h3>
-                <button class="close-modal" onclick="closeBackupModal()">
+                <button type="button" class="close-modal" aria-label="Close data management modal"
+                    onclick="closeBackupModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -940,11 +1137,8 @@
                             style="color: var(--brand-success); margin-right: 0.5rem;"></i>Export / Import
                     </h4>
                     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                        <button class="btn btn-success" onclick="exportToExcel()" style="flex: 1;">
-                            <i class="fas fa-file-excel"></i> Excel
-                        </button>
-                        <button class="btn btn-secondary" onclick="exportToCSV()" style="flex: 1;">
-                            <i class="fas fa-file-csv"></i> CSV
+                        <button class="btn btn-success" onclick="exportToXLSX()" style="flex: 1;">
+                            <i class="fas fa-file-excel"></i> XLSX
                         </button>
                         <button class="btn btn-secondary" onclick="importExcel()" style="flex: 1;">
                             <i class="fas fa-file-upload"></i> Import

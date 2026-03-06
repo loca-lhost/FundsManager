@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { months } from "@/lib/months";
 import { currency, memberTotal } from "@/lib/format";
 import { sumCollectedOverdraftInterest } from "@/lib/overdraft-service";
+import { useModalBehavior } from "@/lib/use-modal-behavior";
 import type { MemberContribution, OverdraftRecord } from "@/types/funds";
 
 type DividendModalProps = {
@@ -41,12 +42,17 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
   const [broughtForward, setBroughtForward] = useState<number>(0);
   const [monthlyInterest, setMonthlyInterest] = useState<number>(0);
   const [results, setResults] = useState<MemberDividend[]>([]);
+  const handleClose = useCallback(() => {
+    setResults([]);
+    onClose();
+  }, [onClose]);
+  const { dialogRef, handleBackdropMouseDown } = useModalBehavior({ open, onClose: handleClose });
 
   const overdraftInterest = useMemo(() => sumCollectedOverdraftInterest(overdrafts), [overdrafts]);
   const totalPool = overdraftInterest + broughtForward + monthlyInterest;
+  const activeMembers = useMemo(() => members.filter((member) => !member.isArchived), [members]);
 
   const weightedMembers = useMemo(() => {
-    const activeMembers = members.filter((member) => !member.isArchived);
     const base = activeMembers.map((member) => {
       const weightedContrib = months.reduce((sum, month) => {
         return sum + (member.contributions[month] || 0) * monthWeights[month];
@@ -62,7 +68,7 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
     const totalWeightedContrib = base.reduce((sum, entry) => sum + entry.weightedContrib, 0);
 
     return { base, totalWeightedContrib };
-  }, [members]);
+  }, [activeMembers]);
 
   const calculate = () => {
     if (totalPool <= 0) {
@@ -90,11 +96,24 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
   };
 
   return (
-    <div className={`modal ${open ? "active" : ""}`} id="dividendModal">
-      <div className="modal-content modal-wide">
+    <div
+      aria-hidden={!open}
+      className={`modal ${open ? "active" : ""}`}
+      id="dividendModal"
+      onMouseDown={handleBackdropMouseDown}
+    >
+      <div
+        aria-labelledby="dividendModalTitle"
+        aria-modal="true"
+        className="modal-content modal-wide"
+        ref={dialogRef}
+        role="dialog"
+      >
         <div className="modal-header">
-          <h3 className="modal-title">End of Year Dividend Calculation</h3>
-          <button className="close-modal" onClick={onClose} type="button">
+          <h3 className="modal-title" id="dividendModalTitle">
+            End of Year Dividend Calculation
+          </h3>
+          <button aria-label="Close dividend modal" className="close-modal" onClick={handleClose} type="button">
             <i className="fas fa-times" />
           </button>
         </div>
@@ -104,32 +123,70 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Overdraft Interest Collected</label>
-              <input className="form-input form-highlight" readOnly type="text" value={currency(overdraftInterest)} />
+              <label className="form-label" htmlFor="dividendOverdraftInterest">
+                Overdraft Interest Collected
+              </label>
+              <input
+                className="form-input form-highlight"
+                id="dividendOverdraftInterest"
+                readOnly
+                type="text"
+                value={currency(overdraftInterest)}
+              />
             </div>
             <div className="form-group">
-              <label className="form-label">Balance B/F</label>
-              <input className="form-input" min={0} onChange={(event) => setBroughtForward(Number(event.target.value) || 0)} placeholder="0.00" step="0.01" type="number" value={broughtForward || ""} />
+              <label className="form-label" htmlFor="dividendBalanceBf">
+                Balance B/F
+              </label>
+              <input
+                className="form-input"
+                id="dividendBalanceBf"
+                min={0}
+                onChange={(event) => setBroughtForward(Number(event.target.value) || 0)}
+                placeholder="0.00"
+                step="0.01"
+                type="number"
+                value={broughtForward || ""}
+              />
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Monthly Interest (Total)</label>
-              <input className="form-input" min={0} onChange={(event) => setMonthlyInterest(Number(event.target.value) || 0)} placeholder="0.00" step="0.01" type="number" value={monthlyInterest || ""} />
+              <label className="form-label" htmlFor="dividendMonthlyInterest">
+                Monthly Interest (Total)
+              </label>
+              <input
+                className="form-input"
+                id="dividendMonthlyInterest"
+                min={0}
+                onChange={(event) => setMonthlyInterest(Number(event.target.value) || 0)}
+                placeholder="0.00"
+                step="0.01"
+                type="number"
+                value={monthlyInterest || ""}
+              />
             </div>
           </div>
 
           <div className="summary-actions">
             <div className="summary-total">
-              <label className="form-label">Total Distributable Dividend</label>
-              <input className="form-input form-total" readOnly type="text" value={currency(totalPool)} />
+              <label className="form-label" htmlFor="dividendTotalPool">
+                Total Distributable Dividend
+              </label>
+              <input className="form-input form-total" id="dividendTotalPool" readOnly type="text" value={currency(totalPool)} />
             </div>
-            <button className="btn btn-primary summary-btn" onClick={calculate} type="button">
+            <button className="btn btn-primary summary-btn" disabled={activeMembers.length === 0} onClick={calculate} type="button">
               Calculate Distribution
             </button>
           </div>
         </div>
+
+        {activeMembers.length === 0 && (
+          <div className="empty-state compact">
+            <p>Add active members before running dividend calculations.</p>
+          </div>
+        )}
 
         {results.length > 0 && (
           <div className="results-panel">

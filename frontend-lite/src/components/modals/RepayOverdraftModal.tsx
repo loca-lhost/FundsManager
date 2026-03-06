@@ -9,6 +9,7 @@ import {
   getRemainingTotal,
   isInterestCollectible,
 } from "@/lib/overdraft-service";
+import { useModalBehavior } from "@/lib/use-modal-behavior";
 import type { OverdraftRecord } from "@/types/funds";
 
 type RepayOverdraftModalProps = {
@@ -22,6 +23,7 @@ type RepayOverdraftModalProps = {
 export default function RepayOverdraftModal({ open, saving, overdraft, onClose, onSave }: RepayOverdraftModalProps) {
   const [amountInput, setAmountInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { dialogRef, handleBackdropMouseDown } = useModalBehavior({ open, onClose });
 
   const remainingTotal = useMemo(() => (overdraft ? getRemainingTotal(overdraft) : 0), [overdraft]);
   const remainingCollectibleNow = useMemo(() => (overdraft ? getRemainingCollectibleNow(overdraft) : 0), [overdraft]);
@@ -56,11 +58,24 @@ export default function RepayOverdraftModal({ open, saving, overdraft, onClose, 
   }
 
   return (
-    <div className={`modal ${open ? "active" : ""}`} id="repayOverdraftModal">
-      <div className="modal-content">
+    <div
+      aria-hidden={!open}
+      className={`modal ${open ? "active" : ""}`}
+      id="repayOverdraftModal"
+      onMouseDown={handleBackdropMouseDown}
+    >
+      <div
+        aria-labelledby="repayOverdraftModalTitle"
+        aria-modal="true"
+        className="modal-content"
+        ref={dialogRef}
+        role="dialog"
+      >
         <div className="modal-header">
-          <h3 className="modal-title">Repay Overdraft</h3>
-          <button className="close-modal" onClick={onClose} type="button">
+          <h3 className="modal-title" id="repayOverdraftModalTitle">
+            Repay Overdraft
+          </h3>
+          <button aria-label="Close repay overdraft modal" className="close-modal" onClick={onClose} type="button">
             <i className="fas fa-times" />
           </button>
         </div>
@@ -107,12 +122,15 @@ export default function RepayOverdraftModal({ open, saving, overdraft, onClose, 
             </div>
 
             <div className="form-group">
-              <label className="form-label">Repayment Amount (GH₵) *</label>
+              <label className="form-label" htmlFor="repayAmount">
+                Repayment Amount (GH₵) *
+              </label>
               <input
                 className="form-input"
+                id="repayAmount"
                 inputMode="decimal"
                 max={remainingCollectibleNow}
-                min={0}
+                min={0.01}
                 onChange={(event) => setAmountInput(event.target.value)}
                 placeholder="0.00"
                 required
@@ -125,7 +143,7 @@ export default function RepayOverdraftModal({ open, saving, overdraft, onClose, 
             {error && <div className="form-error">{error}</div>}
 
             <div className="modal-actions">
-              <button className="btn btn-success modal-btn" disabled={saving} type="submit">
+              <button className="btn btn-success modal-btn" disabled={saving || remainingCollectibleNow <= 0} type="submit">
                 <i className="fas fa-money-bill-wave" /> {saving ? "Saving..." : "Record Payment"}
               </button>
               <button className="btn btn-secondary modal-btn" onClick={onClose} type="button">

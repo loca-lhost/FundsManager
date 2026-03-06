@@ -81,7 +81,9 @@ function togglePasswordVisibility(inputId) {
 
 // Format currency
 function formatCurrency(amount, showSymbol = true) {
-    const formatted = parseFloat(amount || 0).toLocaleString('en-GH', {
+    const value = Number.parseFloat(amount || 0);
+    const safeValue = Number.isFinite(value) ? value : 0;
+    const formatted = safeValue.toLocaleString('en-GH', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     });
@@ -184,3 +186,4 @@ function resetInactivityTimer() {
 function saveData() {
     // No-op for Appwrite (saves are atomic)
 }
+

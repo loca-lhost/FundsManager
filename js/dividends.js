@@ -192,7 +192,7 @@ function printDividendReport() {
         </head>
         <body>
             <h2 class="report-header">
-                Dividend Report — ${currentYear}
+                Dividend Report - ${currentYear}
             </h2>
             <p class="report-meta">Generated on ${new Date().toLocaleDateString()}</p>
             ${dvdContent}
@@ -202,3 +202,4 @@ function printDividendReport() {
     printWindow.document.close();
     setTimeout(() => { printWindow.print(); }, 500);
 }
+

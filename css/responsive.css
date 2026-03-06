@@ -157,32 +157,32 @@
     }
 
     /* -- Mobile card-based table layout -- */
-    table,
-    thead,
-    tbody,
-    th,
-    td,
-    tr {
+    .stacked-table,
+    .stacked-table thead,
+    .stacked-table tbody,
+    .stacked-table th,
+    .stacked-table td,
+    .stacked-table tr {
         display: block;
     }
 
-    thead {
+    .stacked-table thead {
         display: none;
     }
 
-    .month-cell {
+    .stacked-table .month-cell {
         display: none !important;
     }
 
-    tr.expanded .month-cell {
+    .stacked-table tr.expanded .month-cell {
         display: flex !important;
     }
 
-    tr.expanded .mobile-toggle-icon {
+    .stacked-table tr.expanded .mobile-toggle-icon {
         transform: translateY(-50%) rotate(180deg);
     }
 
-    tr {
+    .stacked-table tr {
         margin-bottom: 1rem;
         border: 1px solid var(--brand-border);
         border-radius: var(--radius-md);
@@ -190,7 +190,7 @@
         box-shadow: var(--shadow-sm);
     }
 
-    td {
+    .stacked-table td {
         border: none;
         border-bottom: 1px solid var(--brand-border);
         position: relative;
@@ -204,7 +204,7 @@
         min-height: 40px;
     }
 
-    td:before {
+    .stacked-table td:before {
         position: absolute;
         top: 50%;
         left: 1rem;
@@ -218,11 +218,11 @@
         content: attr(data-label);
     }
 
-    td:last-child {
+    .stacked-table td:last-child {
         border-bottom: none;
     }
 
-    td:first-child {
+    .stacked-table td:first-child {
         background: var(--brand-gray) !important;
         color: var(--brand-blue);
         font-weight: 700;
@@ -233,7 +233,7 @@
         box-shadow: none;
     }
 
-    td:first-child:before {
+    .stacked-table td:first-child:before {
         display: none;
     }
 
@@ -247,7 +247,7 @@
         transition: transform 0.3s;
     }
 
-    tfoot {
+    .stacked-table tfoot {
         display: none;
     }
 

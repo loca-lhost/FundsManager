@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { MonthName, MemberContribution } from "@/types/funds";
+import { currency } from "@/lib/format";
 import { months } from "@/lib/months";
+import { useModalBehavior } from "@/lib/use-modal-behavior";
 
 type ContributionModalProps = {
   open: boolean;
@@ -17,6 +19,7 @@ type ContributionModalProps = {
 
 export default function ContributionModal({ open, year, members, saving, onClose, onSave, onDelete }: ContributionModalProps) {
   const activeMembers = useMemo(() => members.filter((member) => !member.isArchived), [members]);
+  const hasMembers = activeMembers.length > 0;
   const defaultMonth = months[new Date().getMonth()];
   const defaultMemberId = activeMembers[0]?.id || "";
   const defaultAmount = activeMembers[0]?.contributions[defaultMonth] || 0;
@@ -25,8 +28,12 @@ export default function ContributionModal({ open, year, members, saving, onClose
   const [month, setMonth] = useState<MonthName>(defaultMonth);
   const [amountInput, setAmountInput] = useState(defaultAmount > 0 ? String(defaultAmount) : "");
   const [error, setError] = useState<string | null>(null);
-
-  const selectedMember = useMemo(() => activeMembers.find((member) => member.id === memberId) || null, [activeMembers, memberId]);
+  const { dialogRef, handleBackdropMouseDown } = useModalBehavior({ open, onClose });
+  const resolvedMemberId = activeMembers.some((member) => member.id === memberId) ? memberId : activeMembers[0]?.id || "";
+  const selectedMember = useMemo(
+    () => activeMembers.find((member) => member.id === resolvedMemberId) || null,
+    [activeMembers, resolvedMemberId],
+  );
   const existingAmount = selectedMember ? selectedMember.contributions[month] || 0 : 0;
 
   function handleMemberChange(nextMemberId: string) {
@@ -45,7 +52,7 @@ export default function ContributionModal({ open, year, members, saving, onClose
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!memberId) {
+    if (!resolvedMemberId) {
       setError("Please select a member.");
       return;
     }
@@ -57,20 +64,37 @@ export default function ContributionModal({ open, year, members, saving, onClose
     }
 
     setError(null);
-    await onSave({ memberId, month, amount });
+    await onSave({ memberId: resolvedMemberId, month, amount });
   }
 
   async function handleDelete() {
-    if (!memberId) return;
-    await onDelete({ memberId, month });
+    if (!resolvedMemberId || existingAmount <= 0) return;
+    const confirmed = window.confirm(
+      `Delete ${month} contribution for ${selectedMember?.name || "the selected member"}?`,
+    );
+    if (!confirmed) return;
+    await onDelete({ memberId: resolvedMemberId, month });
   }
 
   return (
-    <div className={`modal ${open ? "active" : ""}`} id="contributionModal">
-      <div className="modal-content">
+    <div
+      aria-hidden={!open}
+      className={`modal ${open ? "active" : ""}`}
+      id="contributionModal"
+      onMouseDown={handleBackdropMouseDown}
+    >
+      <div
+        aria-labelledby="contributionModalTitle"
+        aria-modal="true"
+        className="modal-content"
+        ref={dialogRef}
+        role="dialog"
+      >
         <div className="modal-header">
-          <h3 className="modal-title">Record Contribution ({year})</h3>
-          <button className="close-modal" onClick={onClose} type="button">
+          <h3 className="modal-title" id="contributionModalTitle">
+            Record Contribution ({year})
+          </h3>
+          <button aria-label="Close contribution modal" className="close-modal" onClick={onClose} type="button">
             <i className="fas fa-times" />
           </button>
         </div>
@@ -78,8 +102,17 @@ export default function ContributionModal({ open, year, members, saving, onClose
         <form onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">Member *</label>
-              <select className="form-select" onChange={(event) => handleMemberChange(event.target.value)} required value={memberId}>
+              <label className="form-label" htmlFor="contributionMember">
+                Member *
+              </label>
+              <select
+                className="form-select"
+                disabled={!hasMembers}
+                id="contributionMember"
+                onChange={(event) => handleMemberChange(event.target.value)}
+                required
+                value={resolvedMemberId}
+              >
                 <option value="">Select Member</option>
                 {activeMembers.map((member) => (
                   <option key={member.id} value={member.id}>
@@ -89,8 +122,16 @@ export default function ContributionModal({ open, year, members, saving, onClose
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Month *</label>
-              <select className="form-select" onChange={(event) => handleMonthChange(event.target.value as MonthName)} required value={month}>
+              <label className="form-label" htmlFor="contributionMonth">
+                Month *
+              </label>
+              <select
+                className="form-select"
+                id="contributionMonth"
+                onChange={(event) => handleMonthChange(event.target.value as MonthName)}
+                required
+                value={month}
+              >
                 {months.map((monthName) => (
                   <option key={monthName} value={monthName}>
                     {monthName}
@@ -101,9 +142,13 @@ export default function ContributionModal({ open, year, members, saving, onClose
           </div>
 
           <div className="form-group">
-            <label className="form-label">Amount (GH₵) *</label>
+            <label className="form-label" htmlFor="contributionAmount">
+              Amount (GH₵) *
+            </label>
             <input
               className="form-input"
+              disabled={!hasMembers}
+              id="contributionAmount"
               inputMode="decimal"
               min={0}
               onChange={(event) => setAmountInput(event.target.value)}
@@ -113,16 +158,24 @@ export default function ContributionModal({ open, year, members, saving, onClose
               type="number"
               value={amountInput}
             />
-            <small className="text-muted">Existing value for selected member/month: {existingAmount.toFixed(2)}</small>
+            <small className="text-muted">
+              Existing value for selected member/month: {currency(existingAmount)}
+            </small>
           </div>
 
+          {!hasMembers && <div className="form-error">Add at least one active member before recording contributions.</div>}
           {error && <div className="form-error">{error}</div>}
 
           <div className="modal-actions">
-            <button className="btn btn-primary modal-btn" disabled={saving} type="submit">
+            <button className="btn btn-primary modal-btn" disabled={saving || !hasMembers} type="submit">
               <i className="fas fa-save" /> <span className="btn-text">{saving ? "Saving..." : "Save"}</span>
             </button>
-            <button className="btn btn-danger modal-btn" disabled={saving || existingAmount <= 0} onClick={handleDelete} type="button">
+            <button
+              className="btn btn-danger modal-btn"
+              disabled={saving || existingAmount <= 0 || !hasMembers}
+              onClick={handleDelete}
+              type="button"
+            >
               <i className="fas fa-trash" /> <span className="btn-text">Delete</span>
             </button>
             <button className="btn btn-secondary modal-btn" onClick={onClose} type="button">

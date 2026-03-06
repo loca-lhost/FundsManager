@@ -258,10 +258,27 @@ async function saveMember(event) {
     const name = document.getElementById('memberName').value;
     const accountNumber = document.getElementById('accountNumber').value;
     const initialMonth = document.getElementById('initialMonth').value;
-    const initialAmount = parseFloat(document.getElementById('initialAmount').value) || 0;
+    const initialAmountInput = document.getElementById('initialAmount').value;
+    const initialAmount = Number.parseFloat(initialAmountInput || 0);
 
     if (!/^\d{1,13}$/.test(accountNumber)) {
         showToast('Error', 'Account number must be numeric and up to 13 digits', 'error');
+        return;
+    }
+    if (!name || !name.trim()) {
+        showToast('Error', 'Member name is required', 'error');
+        return;
+    }
+    if (!Number.isFinite(initialAmount) || initialAmount < 0) {
+        showToast('Error', 'Initial contribution must be a valid amount', 'error');
+        return;
+    }
+    if (initialAmount > 0 && !initialMonth) {
+        showToast('Error', 'Please select a month for the initial contribution', 'error');
+        return;
+    }
+    if (initialMonth && initialAmountInput !== '' && initialAmount <= 0) {
+        showToast('Error', 'Initial contribution amount must be greater than 0', 'error');
         return;
     }
 
@@ -290,6 +307,7 @@ async function saveMember(event) {
 
                 if (initialMonth && document.getElementById('initialAmount').value !== "") {
                     membersData[memberIndex].contributions[initialMonth] = initialAmount;
+                    await upsertMemberContribution(editingMemberId, initialMonth, initialAmount);
                 }
 
                 showToast('Success', 'Member updated successfully', 'success');
@@ -321,6 +339,9 @@ async function saveMember(event) {
             months.forEach(month => {
                 newMember.contributions[month] = (month === initialMonth) ? initialAmount : 0;
             });
+            if (initialMonth && initialAmount > 0) {
+                await upsertMemberContribution(newMember.id, initialMonth, initialAmount);
+            }
 
             membersData.push(newMember);
             showToast('Success', 'Member added successfully', 'success');
@@ -340,6 +361,42 @@ async function saveMember(event) {
     closeMemberModal();
     btn.disabled = false;
     btn.innerHTML = originalText;
+}
+
+async function upsertMemberContribution(memberId, month, amount) {
+    let existing = await databases.listDocuments(DB_ID, 'contributions', [
+        Appwrite.Query.equal('memberId', memberId),
+        Appwrite.Query.equal('year', currentYear),
+        Appwrite.Query.equal('month', month),
+        Appwrite.Query.limit(1)
+    ]);
+
+    if (existing.documents.length === 0) {
+        existing = await databases.listDocuments(DB_ID, 'contributions', [
+            Appwrite.Query.equal('memberId', memberId),
+            Appwrite.Query.equal('year', String(currentYear)),
+            Appwrite.Query.equal('month', month),
+            Appwrite.Query.limit(1)
+        ]);
+    }
+
+    if (existing.documents.length > 0) {
+        if (amount > 0) {
+            await databases.updateDocument(DB_ID, 'contributions', existing.documents[0].$id, { amount: amount });
+        } else {
+            await databases.deleteDocument(DB_ID, 'contributions', existing.documents[0].$id);
+        }
+        return;
+    }
+
+    if (amount > 0) {
+        await databases.createDocument(DB_ID, 'contributions', 'unique()', {
+            memberId: memberId,
+            year: currentYear,
+            month: month,
+            amount: amount
+        });
+    }
 }
 
 function deleteMember(memberId) {
@@ -563,14 +620,14 @@ function renderTable() {
         tbody.appendChild(row);
     });
 
-    updateMonthlyTotals();
+    updateMonthlyTotals(filteredData);
 }
 
-function updateMonthlyTotals() {
+function updateMonthlyTotals(sourceMembers = membersData) {
     let grandTotal = 0;
 
     months.forEach((month, index) => {
-        const total = membersData.reduce((sum, member) => sum + (member.contributions[month] || 0), 0);
+        const total = sourceMembers.reduce((sum, member) => sum + (member.contributions[month] || 0), 0);
         const shortMonth = month.substring(0, 3);
         document.getElementById(`total${shortMonth}`).textContent = formatCurrency(total, false);
         grandTotal += total;
@@ -580,20 +637,21 @@ function updateMonthlyTotals() {
 }
 
 function updateStatistics() {
-    const totalMembers = membersData.length;
-    const totalContributions = membersData.reduce((sum, member) =>
+    const activeMembers = membersData.filter(member => !member.isArchived);
+    const totalMembers = activeMembers.length;
+    const totalContributions = activeMembers.reduce((sum, member) =>
         sum + calculateMemberTotal(member), 0);
 
     const date = new Date();
     const currentMonthIndex = date.getMonth();
     const currentMonthName = months[currentMonthIndex];
 
-    const currentMonthTotal = membersData.reduce((sum, m) => sum + (m.contributions[currentMonthName] || 0), 0);
+    const currentMonthTotal = activeMembers.reduce((sum, m) => sum + (m.contributions[currentMonthName] || 0), 0);
 
     let prevMonthTotal = 0;
     if (currentMonthIndex > 0) {
         const prevMonthName = months[currentMonthIndex - 1];
-        prevMonthTotal = membersData.reduce((sum, m) => sum + (m.contributions[prevMonthName] || 0), 0);
+        prevMonthTotal = activeMembers.reduce((sum, m) => sum + (m.contributions[prevMonthName] || 0), 0);
     } else {
         const prevYearData = localStorage.getItem(`welfareData_${currentYear - 1}`);
         if (prevYearData) {
@@ -681,3 +739,4 @@ function printMemberProfile() {
     printWindow.focus();
     setTimeout(() => { printWindow.print(); }, 500);
 }
+

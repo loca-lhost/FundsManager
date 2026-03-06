@@ -1,4 +1,4 @@
-// --- EXPORT (Excel / CSV / PDF) ---
+// --- EXPORT (XLSX / PDF) ---
 
 function exportToExcel() {
     if (typeof XLSX === 'undefined') {
@@ -70,28 +70,12 @@ function exportToExcel() {
     }
 
     XLSX.writeFile(wb, `FundsManager_${currentYear}.xlsx`);
-    showToast('Success', 'Data exported to Excel', 'success');
-    addToAuditLog('Export', 'Exported data to Excel');
+    showToast('Success', 'Data exported to XLSX', 'success');
+    addToAuditLog('Export', 'Exported data to XLSX');
 }
 
-function exportToCSV() {
-    let csv = 'Name,Account Number,' + months.join(',') + ',Total\n';
-
-    membersData.forEach(member => {
-        const total = calculateMemberTotal(member);
-        csv += `"${member.name}","${member.accountNumber}",`;
-        csv += months.map(m => member.contributions[m] || 0).join(',');
-        csv += `,${total}\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `FundsManager_${currentYear}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Success', 'Data exported to CSV', 'success');
+function exportToXLSX() {
+    exportToExcel();
 }
 
 async function importExcel() {
@@ -102,7 +86,7 @@ async function importExcel() {
 
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.xlsx,.xls,.csv';
+    input.accept = '.xlsx,.xls';
 
     input.onchange = async function (e) {
         const file = e.target.files[0];

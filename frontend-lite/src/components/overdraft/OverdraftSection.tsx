@@ -65,7 +65,7 @@ export default function OverdraftSection({
       </div>
 
       <div className="table-wrapper">
-        <table>
+        <table className="overdraft-table stacked-table">
           <thead>
             <tr>
               <th>Reference</th>
@@ -149,11 +149,21 @@ export default function OverdraftSection({
                     {canManage && (
                       <td data-label="Action">
                         <div className="actions-row">
-                          <button className="btn btn-secondary btn-sm" onClick={() => onPrintLetter(item)} type="button">
+                          <button
+                            aria-label={`Print overdraft letter for ${item.memberName}`}
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => onPrintLetter(item)}
+                            type="button"
+                          >
                             <i className="fas fa-print" /> Print
                           </button>
                           {openStatus ? (
-                            <button className="btn btn-success btn-sm" onClick={() => onOpenRepayModal(item)} type="button">
+                            <button
+                              aria-label={`Record repayment for ${item.memberName}`}
+                              className="btn btn-success btn-sm"
+                              onClick={() => onOpenRepayModal(item)}
+                              type="button"
+                            >
                               <i className="fas fa-money-bill-wave" /> Repay
                             </button>
                           ) : (

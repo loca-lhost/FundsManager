@@ -549,6 +549,7 @@ export default function FundsManagerApp() {
         </div>
 
         <Toolbar
+          activeView={activeView}
           onMonthChange={setSelectedMonth}
           onSearch={setSearch}
           onYearChange={setSelectedYear}
@@ -559,7 +560,11 @@ export default function FundsManagerApp() {
         />
 
         {notice && (
-          <div className={`notice ${notice.type === "error" ? "error" : notice.type === "success" ? "success" : "info"}`}>
+          <div
+            aria-live={notice.type === "error" ? "assertive" : "polite"}
+            className={`notice ${notice.type === "error" ? "error" : notice.type === "success" ? "success" : "info"}`}
+            role={notice.type === "error" ? "alert" : "status"}
+          >
             {notice.message}
           </div>
         )}

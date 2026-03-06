@@ -55,6 +55,10 @@ function openContributionModal() {
     refs.month.disabled = false;
 
     populateContributionMembers(refs.member);
+    if (refs.member.options.length <= 1) {
+        showToast('No Members', 'Add at least one active member before recording contributions', 'warning');
+        return;
+    }
     populateContributionMonths(refs.month, months[new Date().getMonth()]);
 
     if (refs.deleteBtn) refs.deleteBtn.style.display = 'none';
@@ -110,10 +114,14 @@ async function saveContribution(event) {
 
     const memberId = refs.member.value;
     const month = refs.month.value;
-    const amount = parseFloat(refs.amount.value) || 0;
+    const amount = parseFloat(refs.amount.value);
 
     if (!memberId || !month) {
         showToast('Error', 'Please select member and month', 'error');
+        return;
+    }
+    if (!Number.isFinite(amount) || amount < 0) {
+        showToast('Error', 'Please enter a valid amount (0 or greater)', 'error');
         return;
     }
 
@@ -127,12 +135,20 @@ async function saveContribution(event) {
     member.contributions[month] = amount;
 
     try {
-        const contribs = await databases.listDocuments(DB_ID, 'contributions', [
+        let contribs = await databases.listDocuments(DB_ID, 'contributions', [
             Appwrite.Query.equal('memberId', memberId),
             Appwrite.Query.equal('year', currentYear),
             Appwrite.Query.equal('month', month),
             Appwrite.Query.limit(1)
         ]);
+        if (contribs.documents.length === 0) {
+            contribs = await databases.listDocuments(DB_ID, 'contributions', [
+                Appwrite.Query.equal('memberId', memberId),
+                Appwrite.Query.equal('year', String(currentYear)),
+                Appwrite.Query.equal('month', month),
+                Appwrite.Query.limit(1)
+            ]);
+        }
 
         if (contribs.documents.length > 0) {
             if (amount > 0) {
@@ -184,17 +200,26 @@ async function deleteContribution() {
 
     const member = membersData.find(m => String(m.id) === String(memberId));
     if (!member) return;
+    if (!confirm(`Delete ${month} contribution for ${member.name}?`)) return;
 
     const oldAmount = member.contributions[month] || 0;
     member.contributions[month] = 0;
 
     try {
-        const contribs = await databases.listDocuments(DB_ID, 'contributions', [
+        let contribs = await databases.listDocuments(DB_ID, 'contributions', [
             Appwrite.Query.equal('memberId', memberId),
             Appwrite.Query.equal('year', currentYear),
             Appwrite.Query.equal('month', month),
             Appwrite.Query.limit(1)
         ]);
+        if (contribs.documents.length === 0) {
+            contribs = await databases.listDocuments(DB_ID, 'contributions', [
+                Appwrite.Query.equal('memberId', memberId),
+                Appwrite.Query.equal('year', String(currentYear)),
+                Appwrite.Query.equal('month', month),
+                Appwrite.Query.limit(1)
+            ]);
+        }
 
         if (contribs.documents.length > 0) {
             await databases.deleteDocument(DB_ID, 'contributions', contribs.documents[0].$id);
