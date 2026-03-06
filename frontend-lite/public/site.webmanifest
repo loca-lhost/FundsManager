@@ -4,8 +4,8 @@
   "description": "Premium welfare contributions and overdraft management",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#191970",
-  "theme_color": "#191970",
+  "background_color": "#0a2249",
+  "theme_color": "#0a2249",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -39,3 +39,4 @@
     }
   ]
 }
+

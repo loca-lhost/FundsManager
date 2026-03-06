@@ -3,8 +3,8 @@
   "short_name": "Funds Mgr",
   "start_url": "./index.html?v=20260305.13",
   "display": "standalone",
-  "background_color": "#191970",
-  "theme_color": "#191970",
+  "background_color": "#0a2249",
+  "theme_color": "#0a2249",
   "icons": [
     {
       "src": "./icons/icon-192.png",
@@ -38,3 +38,4 @@
     }
   ]
 }
+
