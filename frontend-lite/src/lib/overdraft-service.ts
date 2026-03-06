@@ -185,8 +185,7 @@ export async function createOverdraft(input: {
   const issuedAt = resolveIssuedAt(input.dateIssued, new Date().toISOString());
   const issueYear = Number.isFinite(input.year) ? Number(input.year) : new Date(issuedAt).getFullYear();
 
-  const payload = {
-    year: issueYear,
+  const basePayload = {
     memberId: input.memberId,
     memberName: input.memberName,
     amount: principal,
@@ -199,27 +198,45 @@ export async function createOverdraft(input: {
     dateTaken: issuedAt,
   };
 
-  let created: OverdraftDocument;
-  try {
-    created = (await appwriteDatabases.createDocument(
-      APPWRITE_DB_ID,
-      APPWRITE_COLLECTIONS.overdrafts,
-      ID.unique(),
-      payload,
-    )) as OverdraftDocument;
-  } catch (error) {
-    const message = String(error instanceof Error ? error.message : error || "").toLowerCase();
-    if (!message.includes("datetaken")) {
-      throw error;
+  const payloadCandidates: Record<string, unknown>[] = [
+    { ...basePayload, year: issueYear, dateTaken: issuedAt },
+    { ...basePayload, year: issueYear },
+    { ...basePayload, year: String(issueYear), dateTaken: issuedAt },
+    { ...basePayload, year: String(issueYear) },
+  ];
+
+  let created: OverdraftDocument | null = null;
+  let lastError: unknown = null;
+
+  for (const candidate of payloadCandidates) {
+    try {
+      created = (await appwriteDatabases.createDocument(
+        APPWRITE_DB_ID,
+        APPWRITE_COLLECTIONS.overdrafts,
+        ID.unique(),
+        candidate,
+      )) as OverdraftDocument;
+      break;
+    } catch (error) {
+      lastError = error;
+      const message = String(error instanceof Error ? error.message : error || "").toLowerCase();
+      const schemaIssue =
+        message.includes("year") ||
+        message.includes("datetaken") ||
+        message.includes("invalid document structure") ||
+        message.includes("missing required attribute");
+
+      if (!schemaIssue) {
+        throw error;
+      }
     }
-    const fallbackPayload: Record<string, unknown> = { ...payload };
-    Reflect.deleteProperty(fallbackPayload, "dateTaken");
-    created = (await appwriteDatabases.createDocument(
-      APPWRITE_DB_ID,
-      APPWRITE_COLLECTIONS.overdrafts,
-      ID.unique(),
-      fallbackPayload,
-    )) as OverdraftDocument;
+  }
+
+  if (!created) {
+    if (lastError instanceof Error) {
+      throw lastError;
+    }
+    throw new Error("Failed to create overdraft due to schema mismatch.");
   }
 
   return toRecord(created);
