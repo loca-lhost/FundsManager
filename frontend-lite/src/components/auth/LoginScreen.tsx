@@ -29,7 +29,9 @@ export default function LoginScreen({ defaultEmail = "", loading, errorMessage, 
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="login-logo">{"\u20B5"}</div>
+          <div className="login-logo">
+            <img alt="Bese Saka" className="brand-icon" src="/favicon.svg" />
+          </div>
           <h2>Funds Manager</h2>
           <p>Please sign in to continue</p>
         </div>

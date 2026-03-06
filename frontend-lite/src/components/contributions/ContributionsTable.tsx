@@ -8,6 +8,7 @@ type ContributionsTableProps = {
   loading?: boolean;
   canManage: boolean;
   onEditMember: (member: MemberContribution) => void;
+  onOpenContributionModal: () => void;
 };
 
 function monthToken(month: string): string {
@@ -101,6 +102,7 @@ export default function ContributionsTable({
   loading = false,
   canManage,
   onEditMember,
+  onOpenContributionModal,
 }: ContributionsTableProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const selectedMember = useMemo(() => {
@@ -115,7 +117,11 @@ export default function ContributionsTable({
     <div className="table-container contributions-container" id="contributionsSection">
       <div className="table-header">
         <h2 className="table-title">Income Contributions</h2>
-        {selectedMember && <p className="contribution-selected-label">Selected: {selectedMember.name}</p>}
+        {canManage && (
+          <button className="btn btn-primary btn-sm" onClick={onOpenContributionModal} type="button">
+            <i className="fas fa-hand-holding-usd" /> Record Contribution
+          </button>
+        )}
       </div>
 
       {loading ? (

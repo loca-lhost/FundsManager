@@ -495,12 +495,10 @@ export default function FundsManagerApp() {
   return (
     <div id="appContent" className="app-shell">
       <AppHeader
-        activeView={activeView}
         canAdmin={canAdmin}
         canManage={canManage}
         onLogout={handleLogout}
         onOpenAddMemberModal={openCreateMemberModal}
-        onOpenContributionModal={() => setShowContributionModal(true)}
         onOpenDividendModal={() => setShowDividendModal(true)}
         onToggleArchived={() => setShowArchived((current) => !current)}
         role={formatRoleLabel(sessionUser.role)}
@@ -572,6 +570,7 @@ export default function FundsManagerApp() {
             loading={loadingMembers}
             members={visibleMembers}
             onEditMember={openEditMemberModal}
+            onOpenContributionModal={() => setShowContributionModal(true)}
           />
         ) : (
           <OverdraftSection
@@ -593,6 +592,13 @@ export default function FundsManagerApp() {
           <RecentActivity logs={activityLogs} />
         </div>
       </main>
+
+      <footer className="app-footer">
+        <div className="app-footer-content">
+          <p>Funds Manager - Internal Use</p>
+          <p>© {currentYear} KABsTech</p>
+        </div>
+      </footer>
 
       <DividendModal members={members} onClose={() => setShowDividendModal(false)} open={showDividendModal} overdrafts={yearOverdrafts} />
 
