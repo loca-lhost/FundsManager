@@ -1,4 +1,5 @@
 import { currency } from "@/lib/format";
+import { buildOverdraftReference } from "@/lib/overdraft-letter";
 import {
   formatCollectionMonth,
   getOverdraftStatusLabel,
@@ -16,6 +17,7 @@ type OverdraftSectionProps = {
   canManage: boolean;
   onOpenIssueModal: () => void;
   onOpenRepayModal: (record: OverdraftRecord) => void;
+  onPrintLetter: (record: OverdraftRecord) => void;
 };
 
 export default function OverdraftSection({
@@ -24,6 +26,7 @@ export default function OverdraftSection({
   canManage,
   onOpenIssueModal,
   onOpenRepayModal,
+  onPrintLetter,
 }: OverdraftSectionProps) {
   const openOverdrafts = overdrafts.filter((item) => isOpenOverdraftStatus(item.status));
   const totalOutstanding = openOverdrafts.reduce((sum, item) => sum + getRemainingTotal(item), 0);
@@ -64,6 +67,7 @@ export default function OverdraftSection({
         <table>
           <thead>
             <tr>
+              <th>Reference</th>
               <th>Member</th>
               <th className="th-right">Principal</th>
               <th className="th-right">Interest (2%)</th>
@@ -78,14 +82,14 @@ export default function OverdraftSection({
           <tbody>
             {loading ? (
               <tr>
-                <td className="loading-cell" colSpan={canManage ? 9 : 8}>
+                <td className="loading-cell" colSpan={canManage ? 10 : 9}>
                   <div className="spinner" />
                   <div className="loading-text">Loading overdrafts...</div>
                 </td>
               </tr>
             ) : overdrafts.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 9 : 8}>
+                <td colSpan={canManage ? 10 : 9}>
                   <div className="empty-state">
                     <div className="empty-state-icon">
                       <i className="fas fa-hand-holding-usd" />
@@ -100,9 +104,13 @@ export default function OverdraftSection({
                 const remaining = getRemainingTotal(item);
                 const openStatus = isOpenOverdraftStatus(item.status);
                 const label = getOverdraftStatusLabel(item);
+                const reference = buildOverdraftReference(item);
 
                 return (
                   <tr key={item.id}>
+                    <td data-label="Reference" className="font-bold">
+                      {reference}
+                    </td>
                     <td data-label="Member" className="font-bold">
                       {item.memberName}
                     </td>
@@ -139,13 +147,18 @@ export default function OverdraftSection({
                     </td>
                     {canManage && (
                       <td data-label="Action">
-                        {openStatus ? (
-                          <button className="btn btn-success btn-sm" onClick={() => onOpenRepayModal(item)} type="button">
-                            <i className="fas fa-money-bill-wave" /> Repay
+                        <div className="actions-row">
+                          <button className="btn btn-secondary btn-sm" onClick={() => onPrintLetter(item)} type="button">
+                            <i className="fas fa-print" /> Print
                           </button>
-                        ) : (
-                          <span className="text-muted">Closed</span>
-                        )}
+                          {openStatus ? (
+                            <button className="btn btn-success btn-sm" onClick={() => onOpenRepayModal(item)} type="button">
+                              <i className="fas fa-money-bill-wave" /> Repay
+                            </button>
+                          ) : (
+                            <span className="text-muted">Closed</span>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>

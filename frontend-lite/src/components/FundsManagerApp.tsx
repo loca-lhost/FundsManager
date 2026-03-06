@@ -24,6 +24,7 @@ import {
   upsertContribution,
 } from "@/lib/data-service";
 import { currency, formatDateTime } from "@/lib/format";
+import { buildOverdraftReference, printOverdraftLetter } from "@/lib/overdraft-letter";
 import { createOverdraft, fetchOverdrafts, isOpenOverdraftStatus, repayOverdraft } from "@/lib/overdraft-service";
 import type { SessionUser } from "@/types/auth";
 import type { ActivityLog, MemberContribution, MonthName, OverdraftRecord } from "@/types/funds";
@@ -433,18 +434,31 @@ export default function FundsManagerApp() {
 
     setSavingAction(true);
     try {
-      await createOverdraft({
+      const created = await createOverdraft({
         year: selectedYear,
         memberId: payload.memberId,
         memberName: targetMember.name,
         amount: payload.amount,
         reason: payload.reason,
       });
+      const reference = buildOverdraftReference(created);
+      const opened = printOverdraftLetter({
+        record: created,
+        memberAccountNumber: targetMember.accountNumber,
+        managerName: sessionUser?.fullName || "Fund Manager",
+        organizationName: "KABsTech Fund",
+        printedBy: sessionUser?.fullName || "",
+      });
       setShowIssueOverdraftModal(false);
-      setNotice({ type: "success", message: "Overdraft issued successfully." });
+      setNotice({
+        type: "success",
+        message: opened
+          ? `Overdraft issued successfully. Ref ${reference}. Letter opened for print.`
+          : `Overdraft issued successfully. Ref ${reference}. Allow pop-ups to print the letter.`,
+      });
       appendActivity({
         action: "Overdraft",
-        detail: `${targetMember.name} issued ${currency(payload.amount)}`,
+        detail: `${targetMember.name} issued ${currency(payload.amount)} (${reference})`,
         icon: "fa-money-check-dollar",
         tone: "info",
       });
@@ -478,6 +492,25 @@ export default function FundsManagerApp() {
       setNotice({ type: "error", message });
     } finally {
       setSavingAction(false);
+    }
+  }
+
+  function handlePrintOverdraftLetter(record: OverdraftRecord) {
+    const member = members.find((item) => item.id === record.memberId);
+    const reference = buildOverdraftReference(record);
+    const opened = printOverdraftLetter({
+      record,
+      memberAccountNumber: member?.accountNumber || "N/A",
+      managerName: sessionUser?.fullName || "Fund Manager",
+      organizationName: "KABsTech Fund",
+      printedBy: sessionUser?.fullName || "",
+    });
+
+    if (!opened) {
+      setNotice({
+        type: "info",
+        message: `Unable to open print window for ${reference}. Allow pop-ups and try again.`,
+      });
     }
   }
 
@@ -585,6 +618,7 @@ export default function FundsManagerApp() {
             canManage={canManage}
             loading={loadingOverdrafts}
             onOpenIssueModal={() => setShowIssueOverdraftModal(true)}
+            onPrintLetter={handlePrintOverdraftLetter}
             onOpenRepayModal={(record) => {
               setRepayingOverdraft(record);
               setShowRepayOverdraftModal(true);
