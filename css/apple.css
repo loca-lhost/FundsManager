@@ -92,8 +92,7 @@ textarea {
     background: linear-gradient(90deg, transparent, rgba(0, 44, 99, 0.14));
 }
 
-.logo,
-.login-logo {
+.logo {
     background: linear-gradient(160deg, #004e96 0%, #002c63 100%);
     border-radius: 18px;
     box-shadow: 0 8px 20px rgba(0, 44, 99, 0.3);
@@ -386,6 +385,29 @@ tbody tr:hover td:first-child {
     background:
         radial-gradient(780px 340px at 50% -20%, var(--theme-login-radial), transparent 72%),
         linear-gradient(180deg, var(--theme-login-start) 0%, var(--theme-login-mid) 50%, var(--theme-login-end) 100%);
+}
+
+.login-brand-panel {
+    border-color: rgba(147, 193, 255, 0.34);
+    background:
+        linear-gradient(140deg, rgba(3, 31, 73, 0.93), rgba(0, 44, 99, 0.88)),
+        radial-gradient(520px 220px at 88% -26%, rgba(113, 194, 255, 0.26), transparent 70%);
+}
+
+.login-card .login-logo {
+    background: linear-gradient(145deg, #ffffff, #edf4ff);
+    border: 1px solid rgba(120, 170, 233, 0.42);
+    box-shadow: 0 12px 26px rgba(0, 44, 99, 0.2);
+}
+
+.login-badge {
+    border-color: rgba(0, 44, 99, 0.24);
+    background: rgba(0, 44, 99, 0.08);
+    color: #00387a;
+}
+
+.forgot-link {
+    color: #003d85;
 }
 
 .pull-to-refresh {
