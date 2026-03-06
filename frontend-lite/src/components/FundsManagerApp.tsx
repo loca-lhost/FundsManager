@@ -224,6 +224,15 @@ export default function FundsManagerApp() {
     loadYearData();
   }, [loadYearData, sessionUser]);
 
+  const refreshSessionUser = useCallback(async () => {
+    const refreshed = await getCurrentSessionUser();
+    setSessionUser(refreshed);
+    if (!refreshed) {
+      setMembers([]);
+      setOverdrafts([]);
+    }
+  }, []);
+
   async function handleLogin(payload: { email: string; password: string; remember: boolean }) {
     setLoginLoading(true);
     setNotice(null);
@@ -257,6 +266,13 @@ export default function FundsManagerApp() {
     setMembers([]);
     setOverdrafts([]);
     setNotice({ type: "info", message: "Logged out." });
+  }
+
+  async function handleSignedOutAllSessions() {
+    setSessionUser(null);
+    setMembers([]);
+    setOverdrafts([]);
+    setNotice({ type: "info", message: "Signed out from all devices. Please sign in again." });
   }
 
   function openCreateMemberModal() {
@@ -500,20 +516,20 @@ export default function FundsManagerApp() {
         onLogout={handleLogout}
         onOpenAddMemberModal={openCreateMemberModal}
         onOpenDividendModal={() => setShowDividendModal(true)}
+        onRefreshSession={refreshSessionUser}
+        onSignedOutAllSessions={handleSignedOutAllSessions}
         onToggleArchived={() => setShowArchived((current) => !current)}
         role={formatRoleLabel(sessionUser.role)}
         showArchived={showArchived}
-        userName={sessionUser.fullName.split(" ")[0]}
+        userEmail={sessionUser.email}
+        userName={sessionUser.fullName}
       />
 
       <main className="container">
         <section className="hero-panel">
           <div className="hero-copy">
-            <p className="hero-kicker">Financial Control Hub</p>
             <h2>Welcome back, {sessionUser.fullName.split(" ")[0]}</h2>
-            <p className="hero-description">
-              Manage member contributions, structured overdrafts, and end-of-year distribution from a single premium workspace.
-            </p>
+            <p className="hero-description">Manage contributions, overdrafts, and year-end payouts in one workspace.</p>
           </div>
           <div className="hero-metrics">
             <div className="hero-metric-chip">

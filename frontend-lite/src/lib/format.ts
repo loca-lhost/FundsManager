@@ -33,3 +33,14 @@ export function formatDateTime(value: string): string {
     minute: "2-digit",
   }).format(date);
 }
+
+export function nameInitials(value: string): string {
+  const tokens = value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (tokens.length === 0) return "?";
+  if (tokens.length === 1) return tokens[0].slice(0, 2).toUpperCase();
+  return `${tokens[0][0] ?? ""}${tokens[tokens.length - 1][0] ?? ""}`.toUpperCase();
+}

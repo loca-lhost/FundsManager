@@ -1,7 +1,7 @@
 import type { Models } from "appwrite";
 import { ID } from "appwrite";
 import { APPWRITE_COLLECTIONS, APPWRITE_DB_ID, appwriteAccount, appwriteDatabases, appwriteTeams, AppwriteQuery } from "@/lib/appwrite";
-import type { SessionUser, UserRole } from "@/types/auth";
+import type { ActiveSession, SessionUser, UserProfileSnapshot, UserRole } from "@/types/auth";
 
 type ProfileDocument = Models.Document & {
   userId?: string;
@@ -9,6 +9,19 @@ type ProfileDocument = Models.Document & {
   full_name?: string;
   role?: string;
   isArchived?: boolean;
+  lastLogin?: string;
+};
+
+type UpdateUserProfileInput = {
+  fullName: string;
+  email: string;
+  phone: string;
+  currentPassword?: string;
+};
+
+type PasswordUpdateInput = {
+  currentPassword: string;
+  newPassword: string;
 };
 
 function normalizeRole(value: string | undefined): UserRole {
@@ -21,6 +34,41 @@ function normalizeRole(value: string | undefined): UserRole {
 
 function normalizeDisplayRole(role: UserRole): string {
   return role.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return String((error as { message: string }).message);
+  }
+  return fallback;
+}
+
+function toSessionSummary(session: Models.Session): ActiveSession {
+  return {
+    id: session.$id,
+    current: Boolean(session.current),
+    createdAt: session.$createdAt,
+    expireAt: session.expire,
+    clientName: String(session.clientName || "Unknown client"),
+    deviceName: String(session.deviceName || "Unknown device"),
+    osName: String(session.osName || "Unknown OS"),
+    countryName: String(session.countryName || "Unknown"),
+    ip: String(session.ip || "N/A"),
+    factors: Array.isArray(session.factors) ? session.factors : [],
+  };
+}
+
+function sortSessions(a: ActiveSession, b: ActiveSession): number {
+  if (a.current !== b.current) {
+    return a.current ? -1 : 1;
+  }
+  return Date.parse(b.createdAt) - Date.parse(a.createdAt);
 }
 
 async function getTeamRole(): Promise<UserRole> {
@@ -125,6 +173,129 @@ export async function signOut(): Promise<void> {
     await appwriteAccount.deleteSession("current");
   } catch {
     // Ignore missing/expired session.
+  }
+}
+
+export async function getUserProfileSnapshot(): Promise<UserProfileSnapshot> {
+  try {
+    const accountUser = await appwriteAccount.get();
+    const teamRole = await getTeamRole();
+    const profile = await ensureProfile(accountUser, teamRole);
+    const profileRole = normalizeRole(profile?.role);
+    const role = teamRole !== "viewer" ? teamRole : profileRole;
+    const sessionsResponse = await appwriteAccount.listSessions();
+    const sessions = sessionsResponse.sessions.map(toSessionSummary).sort(sortSessions);
+
+    return {
+      userId: accountUser.$id,
+      fullName: profileFullName(profile, accountUser.name || accountUser.email),
+      email: accountUser.email,
+      phone: String(accountUser.phone || ""),
+      role,
+      mfaEnabled: Boolean(accountUser.mfa),
+      lastLogin: profile?.lastLogin ? String(profile.lastLogin) : null,
+      sessions,
+    };
+  } catch (error) {
+    throw new Error(toErrorMessage(error, "Unable to load profile details."));
+  }
+}
+
+export async function updateCurrentUserProfile(input: UpdateUserProfileInput): Promise<SessionUser> {
+  const fullName = input.fullName.trim();
+  const email = input.email.trim().toLowerCase();
+  const phone = input.phone.trim();
+  const currentPassword = input.currentPassword || "";
+
+  if (!fullName) {
+    throw new Error("Full name is required.");
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+  if (phone && !/^\+[1-9]\d{7,14}$/.test(phone)) {
+    throw new Error("Phone number must use E.164 format, e.g. +233555123456.");
+  }
+  try {
+    const accountUser = await appwriteAccount.get();
+
+    const needsEmailUpdate = email !== String(accountUser.email || "").trim().toLowerCase();
+    const currentPhone = String(accountUser.phone || "").trim();
+    const needsPhoneUpdate = phone !== currentPhone;
+
+    if ((needsEmailUpdate || needsPhoneUpdate) && !currentPassword) {
+      throw new Error("Current password is required when changing email or phone.");
+    }
+    if (needsPhoneUpdate && !phone) {
+      throw new Error("Phone number cannot be blank when changing it.");
+    }
+
+    if (fullName !== String(accountUser.name || "").trim()) {
+      await appwriteAccount.updateName(fullName);
+    }
+    if (needsEmailUpdate) {
+      await appwriteAccount.updateEmail(email, currentPassword);
+    }
+    if (needsPhoneUpdate) {
+      await appwriteAccount.updatePhone(phone, currentPassword);
+    }
+
+    const profile = await findProfile(accountUser.$id);
+    if (profile) {
+      try {
+        await appwriteDatabases.updateDocument(APPWRITE_DB_ID, APPWRITE_COLLECTIONS.profiles, profile.$id, {
+          fullName,
+        });
+      } catch {
+        // Optional profile synchronization.
+      }
+    }
+
+    const sessionUser = await getCurrentSessionUser();
+    if (!sessionUser) {
+      throw new Error("Profile saved but session refresh failed.");
+    }
+    return sessionUser;
+  } catch (error) {
+    throw new Error(toErrorMessage(error, "Failed to update profile."));
+  }
+}
+
+export async function changeCurrentUserPassword(input: PasswordUpdateInput): Promise<void> {
+  const currentPassword = input.currentPassword;
+  const newPassword = input.newPassword;
+
+  if (!currentPassword) {
+    throw new Error("Current password is required.");
+  }
+  if (newPassword.length < 8) {
+    throw new Error("New password must be at least 8 characters.");
+  }
+  if (currentPassword === newPassword) {
+    throw new Error("New password must be different from current password.");
+  }
+
+  try {
+    await appwriteAccount.updatePassword(newPassword, currentPassword);
+  } catch (error) {
+    throw new Error(toErrorMessage(error, "Failed to change password."));
+  }
+}
+
+export async function setCurrentUserMfa(enabled: boolean): Promise<boolean> {
+  try {
+    const user = await appwriteAccount.updateMFA(enabled);
+    return Boolean(user.mfa);
+  } catch (error) {
+    throw new Error(toErrorMessage(error, "Unable to update MFA status."));
+  }
+}
+
+export async function signOutAllUserSessions(): Promise<void> {
+  try {
+    await appwriteAccount.deleteSessions();
+  } catch (error) {
+    throw new Error(toErrorMessage(error, "Unable to sign out all sessions."));
   }
 }
 

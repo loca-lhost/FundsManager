@@ -26,30 +26,29 @@ function toSafeDate(value: string): Date {
   return parsed;
 }
 
+function dayWithOrdinal(day: number): string {
+  const remainder10 = day % 10;
+  const remainder100 = day % 100;
+  if (remainder100 >= 11 && remainder100 <= 13) return `${day}th`;
+  if (remainder10 === 1) return `${day}st`;
+  if (remainder10 === 2) return `${day}nd`;
+  if (remainder10 === 3) return `${day}rd`;
+  return `${day}th`;
+}
+
 function formatLongDate(value: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(toSafeDate(value));
-}
-
-function formatCollectionMonth(value: string): string {
-  const issued = toSafeDate(value);
-  const due = new Date(issued.getFullYear(), issued.getMonth() + 1, 1);
-  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(due);
-}
-
-function toReferenceDateStamp(value: string): string {
   const date = toSafeDate(value);
-  const year = String(date.getUTCFullYear());
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
+  const month = new Intl.DateTimeFormat("en-GB", { month: "long" }).format(date);
+  return `${dayWithOrdinal(date.getDate())} ${month} ${date.getFullYear()}`;
 }
 
-function formatOverdraftReference(dateStamp: string, sequence: number): string {
-  return `OD${dateStamp}-${String(Math.max(1, sequence)).padStart(3, "0")}`;
+function toReferenceYear(value: string): string {
+  const date = toSafeDate(value);
+  return String(date.getUTCFullYear());
+}
+
+function formatOverdraftReference(year: string, sequence: number): string {
+  return `OD${year}-${String(Math.max(1, sequence)).padStart(3, "0")}`;
 }
 
 export function buildOverdraftReferenceIndex(records: OverdraftRecord[]): Map<string, string> {
@@ -60,14 +59,14 @@ export function buildOverdraftReferenceIndex(records: OverdraftRecord[]): Map<st
     return left.id.localeCompare(right.id);
   });
 
-  const dailySequence = new Map<string, number>();
+  const yearlySequence = new Map<string, number>();
   const references = new Map<string, string>();
 
   for (const record of sorted) {
-    const dateStamp = toReferenceDateStamp(record.dateIssued);
-    const sequence = (dailySequence.get(dateStamp) || 0) + 1;
-    dailySequence.set(dateStamp, sequence);
-    references.set(record.id, formatOverdraftReference(dateStamp, sequence));
+    const year = toReferenceYear(record.dateIssued);
+    const sequence = (yearlySequence.get(year) || 0) + 1;
+    yearlySequence.set(year, sequence);
+    references.set(record.id, formatOverdraftReference(year, sequence));
   }
 
   return references;
@@ -77,7 +76,7 @@ export function buildOverdraftReference(record: OverdraftRecord, records: Overdr
   const references = buildOverdraftReferenceIndex(records);
   const resolved = references.get(record.id);
   if (resolved) return resolved;
-  return formatOverdraftReference(toReferenceDateStamp(record.dateIssued), 1);
+  return formatOverdraftReference(toReferenceYear(record.dateIssued), 1);
 }
 
 export function openOverdraftPrintWindow(): Window | null {
@@ -126,8 +125,6 @@ export function printOverdraftLetter(input: PrintOverdraftLetterInput): boolean 
 
   const referenceNumber = input.referenceNumber || buildOverdraftReference(input.record);
   const issuedDateLabel = formatLongDate(input.record.dateIssued);
-  const collectionMonth = formatCollectionMonth(input.record.dateIssued);
-  const purpose = input.record.reason.trim() || "General overdraft support";
   const opened = input.printWindow || window.open("", "_blank", "width=960,height=1080");
   if (!opened) {
     return false;
@@ -142,7 +139,7 @@ export function printOverdraftLetter(input: PrintOverdraftLetterInput): boolean 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overdraft Issuance Letter - ${escapeHtml(referenceNumber)}</title>
+  <title>Overdraft Application Letter - ${escapeHtml(referenceNumber)}</title>
   <style>
     :root {
       --ink: #0f2342;
@@ -281,46 +278,46 @@ export function printOverdraftLetter(input: PrintOverdraftLetterInput): boolean 
     <section class="letter">
       <div class="top-band">
         <div class="org">${escapeHtml(organizationName)}</div>
-        <div class="doc">
-          Overdraft Issuance Letter<br />
-          Ref: ${escapeHtml(referenceNumber)}
-        </div>
+        <div class="doc">Overdraft Application Letter<br />Ref: ${escapeHtml(referenceNumber)}</div>
       </div>
       <div class="body">
         <div class="meta">
+          <div><strong>To:</strong> The Fund Manager</div>
           <div><strong>Date:</strong> ${escapeHtml(issuedDateLabel)}</div>
-          <div><strong>Addressed To:</strong> Fund Manager</div>
-          <div><strong>Reference No.:</strong> ${escapeHtml(referenceNumber)}</div>
-          <div><strong>Status:</strong> ${escapeHtml(input.record.status.toUpperCase())}</div>
+          <div><strong>Ref:</strong> ${escapeHtml(referenceNumber)}</div>
         </div>
-        <p class="subject">Subject: Overdraft Issuance Confirmation for ${escapeHtml(input.record.memberName)}</p>
+        <p class="lead"><strong>Dear Sir/Madam,</strong></p>
+        <p class="subject">APPLICATION FOR OVERDRAFT FACILITY</p>
         <p class="lead">
-          Dear Fund Manager, this letter confirms that an overdraft has been issued under the approved fund policy.
-          Details are provided below for records and filing.
+          I, ${escapeHtml(input.record.memberName)} (Account No: ${escapeHtml(input.memberAccountNumber || "N/A")}),
+          hereby submit my application for an overdraft facility of ${escapeHtml(currency(input.record.amount))}.
         </p>
-        <table>
-          <tbody>
-            <tr><th>Member Name</th><td>${escapeHtml(input.record.memberName)}</td></tr>
-            <tr><th>Account Number</th><td>${escapeHtml(input.memberAccountNumber || "N/A")}</td></tr>
-            <tr><th>Principal Amount</th><td>${escapeHtml(currency(input.record.amount))}</td></tr>
-            <tr><th>Overdraft Interest (2%)</th><td>${escapeHtml(currency(input.record.interest))}</td></tr>
-            <tr><th>Total Repayment</th><td>${escapeHtml(currency(input.record.totalRepayment))}</td></tr>
-            <tr><th>Reason/Purpose</th><td>${escapeHtml(purpose)}</td></tr>
-            <tr><th>Interest Collection Month</th><td>${escapeHtml(collectionMonth)}</td></tr>
-          </tbody>
-        </table>
-        <p class="note">
-          Policy note: Overdraft interest is fixed at 2% of principal and is due in the month after issuance.
-          Reference number ${escapeHtml(referenceNumber)} should be quoted in all related records.
+        <p class="subject" style="font-size:14px; margin-top: 0;">Terms and Conditions</p>
+        <p class="lead" style="margin-bottom: 8px;">I understand and agree with the following terms governing this facility:</p>
+        <ul class="lead" style="margin: 0 0 12px 18px; padding: 0;">
+          <li style="margin-bottom: 6px;"><strong>Interest Rate:</strong> A flat rate of 2% will be charged on the principal amount.</li>
+          <li style="margin-bottom: 6px;">
+            <strong>Repayment Amount:</strong> The total amount payable is ${escapeHtml(currency(input.record.totalRepayment))}
+            (Principal: ${escapeHtml(currency(input.record.amount))} + Interest: ${escapeHtml(currency(input.record.interest))}).
+          </li>
+          <li>
+            <strong>Duration:</strong> Repayment is due within one month from the date of issuance or upon the next salary payment date, whichever occurs first.
+          </li>
+        </ul>
+        <p class="lead">
+          I confirm that I have read and understood the terms above. Kindly approve my application.
         </p>
+        <p class="lead" style="margin-bottom: 0;">Yours faithfully,</p>
         <div class="signatures">
           <div class="sign-card">
-            Fund Manager<br />
-            ${escapeHtml(input.managerName)}
+            Signature of Applicant<br /><br />
+            _________________________<br />
+            <strong>${escapeHtml(input.record.memberName.toUpperCase())}</strong>
           </div>
           <div class="sign-card">
-            Member Acknowledgement<br />
-            ${escapeHtml(input.record.memberName)}
+            Approved By<br /><br />
+            _____________________<br />
+            <strong>FUND MANAGER</strong>
           </div>
         </div>
         <div class="footer">
