@@ -57,27 +57,34 @@ export default function Toolbar({
   return (
     <div className="toolbar">
       <div className="toolbar-left">
-        <div className="search-box">
+        <div className="search-box search-box-wide">
           <i className="fas fa-search" />
-          <input type="text" value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Search members or account number..." />
+          <input
+            type="text"
+            value={search}
+            onChange={(event) => onSearch(event.target.value)}
+            placeholder="Search members, account, status..."
+          />
         </div>
 
-        <select className="form-select" value={selectedYear} onChange={(event) => onYearChange(Number(event.target.value))} style={{ width: "auto", minWidth: 90 }}>
-          {yearOptions.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+        <div className="filter-group">
+          <select className="form-select filter-select" value={selectedYear} onChange={(event) => onYearChange(Number(event.target.value))}>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
 
-        <select className="form-select" value={selectedMonth} onChange={(event) => onMonthChange(event.target.value)} style={{ width: "auto", minWidth: 120 }}>
-          <option value="">All Months</option>
-          {months.map((month) => (
-            <option key={month} value={month}>
-              {month}
-            </option>
-          ))}
-        </select>
+          <select className="form-select filter-select" value={selectedMonth} onChange={(event) => onMonthChange(event.target.value)}>
+            <option value="">All Months</option>
+            {months.map((month) => (
+              <option key={month} value={month}>
+                {month}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="toolbar-right">
@@ -89,7 +96,7 @@ export default function Toolbar({
             <button className="btn btn-primary" onClick={onOpenContributionModal} type="button">
               <i className="fas fa-hand-holding-usd" /> Record Contribution
             </button>
-            <button className="btn btn-secondary" onClick={onOpenIssueOverdraftModal} type="button">
+            <button className="btn btn-secondary btn-soft" onClick={onOpenIssueOverdraftModal} type="button">
               <i className="fas fa-money-check-dollar" /> Issue Overdraft
             </button>
           </>
@@ -109,7 +116,7 @@ export default function Toolbar({
                 }}
                 type="button"
               >
-                <i className="fas fa-calculator" style={{ color: "var(--brand-success)" }} /> Calculate Dividends
+                <i className="fas fa-calculator text-success" /> Calculate Dividends
               </button>
             )}
             {canAdmin && (
@@ -121,7 +128,7 @@ export default function Toolbar({
                 }}
                 type="button"
               >
-                <i className="fas fa-archive" style={{ color: "var(--theme-text-secondary)" }} />{" "}
+                <i className="fas fa-archive text-muted" />{" "}
                 {showArchived ? "Hide Archived" : "Show Archived"}
               </button>
             )}

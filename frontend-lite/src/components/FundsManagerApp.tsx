@@ -115,6 +115,10 @@ export default function FundsManagerApp() {
     () => yearOverdrafts.filter((item) => isOpenOverdraftStatus(item.status)).length,
     [yearOverdrafts],
   );
+  const activeMemberCount = useMemo(
+    () => members.filter((item) => !item.isArchived).length,
+    [members],
+  );
 
   const appendActivity = useCallback((payload: Omit<ActivityLog, "id" | "timestamp">) => {
     const event: ActivityLog = {
@@ -501,6 +505,30 @@ export default function FundsManagerApp() {
       <AppHeader onLogout={handleLogout} role={formatRoleLabel(sessionUser.role)} userName={sessionUser.fullName.split(" ")[0]} />
 
       <main className="container">
+        <section className="hero-panel">
+          <div className="hero-copy">
+            <p className="hero-kicker">Financial Control Hub</p>
+            <h2>Welcome back, {sessionUser.fullName.split(" ")[0]}</h2>
+            <p className="hero-description">
+              Manage member contributions, structured overdrafts, and end-of-year distribution from a single premium workspace.
+            </p>
+          </div>
+          <div className="hero-metrics">
+            <div className="hero-metric-chip">
+              <span className="chip-label">Year</span>
+              <strong>{selectedYear}</strong>
+            </div>
+            <div className="hero-metric-chip">
+              <span className="chip-label">Active Members</span>
+              <strong>{activeMemberCount}</strong>
+            </div>
+            <div className="hero-metric-chip">
+              <span className="chip-label">Open Overdrafts</span>
+              <strong>{openOverdraftCount}</strong>
+            </div>
+          </div>
+        </section>
+
         <div className="tabs-container">
           <button
             className={`tab-btn ${activeView === "contributions" ? "active" : ""}`}

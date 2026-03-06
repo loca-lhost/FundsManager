@@ -91,7 +91,7 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
 
   return (
     <div className={`modal ${open ? "active" : ""}`} id="dividendModal">
-      <div className="modal-content" style={{ maxWidth: 900 }}>
+      <div className="modal-content modal-wide">
         <div className="modal-header">
           <h3 className="modal-title">End of Year Dividend Calculation</h3>
           <button className="close-modal" onClick={onClose} type="button">
@@ -99,13 +99,13 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
           </button>
         </div>
 
-        <div className="form-group" style={{ background: "var(--theme-surface-strong)", padding: "1.5rem", borderRadius: 12, border: "1px solid var(--theme-surface-border)" }}>
-          <h4 style={{ marginBottom: "1rem", color: "var(--brand-dark)", fontSize: "1rem" }}>Profit Breakdown</h4>
+        <div className="modal-summary-card">
+          <h4 className="modal-subtitle">Profit Breakdown</h4>
 
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Overdraft Interest Collected</label>
-              <input className="form-input" readOnly type="text" value={currency(overdraftInterest)} style={{ backgroundColor: "var(--theme-row-hover)", color: "var(--brand-blue)", fontWeight: 600 }} />
+              <input className="form-input form-highlight" readOnly type="text" value={currency(overdraftInterest)} />
             </div>
             <div className="form-group">
               <label className="form-label">Balance B/F</label>
@@ -120,28 +120,28 @@ export default function DividendModal({ open, onClose, members, overdrafts }: Di
             </div>
           </div>
 
-          <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--theme-surface-border)", display: "flex", gap: "1rem", alignItems: "flex-end" }}>
-            <div style={{ flex: 1 }}>
+          <div className="summary-actions">
+            <div className="summary-total">
               <label className="form-label">Total Distributable Dividend</label>
-              <input className="form-input" readOnly style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--brand-success)" }} type="text" value={currency(totalPool)} />
+              <input className="form-input form-total" readOnly type="text" value={currency(totalPool)} />
             </div>
-            <button className="btn btn-primary" onClick={calculate} style={{ height: 46 }} type="button">
+            <button className="btn btn-primary summary-btn" onClick={calculate} type="button">
               Calculate Distribution
             </button>
           </div>
         </div>
 
         {results.length > 0 && (
-          <div style={{ marginTop: "2rem" }}>
-            <div className="table-wrapper" style={{ maxHeight: 400, overflowY: "auto", marginBottom: "1.5rem" }}>
-              <table style={{ width: "100%" }}>
+          <div className="results-panel">
+            <div className="table-wrapper modal-table-scroll">
+              <table>
                 <thead>
                   <tr>
                     <th>Member</th>
-                    <th style={{ textAlign: "right" }}>Total Contrib.</th>
-                    <th style={{ textAlign: "right" }}>Share %</th>
-                    <th style={{ textAlign: "right" }}>Dividend</th>
-                    <th style={{ textAlign: "right" }}>Total Payout</th>
+                    <th className="th-right">Total Contrib.</th>
+                    <th className="th-right">Share %</th>
+                    <th className="th-right">Dividend</th>
+                    <th className="th-right">Total Payout</th>
                   </tr>
                 </thead>
                 <tbody>

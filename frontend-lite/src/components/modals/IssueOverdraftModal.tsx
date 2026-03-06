@@ -118,10 +118,10 @@ export default function IssueOverdraftModal({ open, saving, members, onClose, on
           {error && <div className="form-error">{error}</div>}
 
           <div className="modal-actions">
-            <button className="btn btn-primary" disabled={saving} type="submit">
+            <button className="btn btn-primary modal-btn" disabled={saving} type="submit">
               <i className="fas fa-save" /> {saving ? "Saving..." : "Issue Overdraft"}
             </button>
-            <button className="btn btn-secondary" onClick={onClose} type="button">
+            <button className="btn btn-secondary modal-btn" onClick={onClose} type="button">
               <i className="fas fa-times" /> Cancel
             </button>
           </div>

@@ -65,12 +65,12 @@ export default function OverdraftSection({
           <thead>
             <tr>
               <th>Member</th>
-              <th style={{ textAlign: "right" }}>Principal</th>
-              <th style={{ textAlign: "right" }}>Interest (2%)</th>
+              <th className="th-right">Principal</th>
+              <th className="th-right">Interest (2%)</th>
               <th>Collection Month</th>
-              <th style={{ textAlign: "right" }}>Total Repayment</th>
-              <th style={{ textAlign: "right" }}>Paid</th>
-              <th style={{ textAlign: "right" }}>Remaining</th>
+              <th className="th-right">Total Repayment</th>
+              <th className="th-right">Paid</th>
+              <th className="th-right">Remaining</th>
               <th>Status</th>
               {canManage && <th>Action</th>}
             </tr>
@@ -78,9 +78,9 @@ export default function OverdraftSection({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={canManage ? 9 : 8} style={{ textAlign: "center", padding: "2.75rem" }}>
+                <td className="loading-cell" colSpan={canManage ? 9 : 8}>
                   <div className="spinner" />
-                  <div style={{ marginTop: "0.9rem" }}>Loading overdrafts...</div>
+                  <div className="loading-text">Loading overdrafts...</div>
                 </td>
               </tr>
             ) : overdrafts.length === 0 ? (

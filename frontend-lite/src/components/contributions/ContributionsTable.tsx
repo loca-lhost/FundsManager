@@ -37,11 +37,11 @@ export default function ContributionsTable({
               <th>Member Name</th>
               <th>Account Number</th>
               {months.map((month) => (
-                <th key={month} style={{ textAlign: "right" }}>
+                <th className="th-right" key={month}>
                   {month}
                 </th>
               ))}
-              <th style={{ textAlign: "right" }}>Total</th>
+              <th className="th-right">Total</th>
               {hasActions && <th>Actions</th>}
             </tr>
           </thead>
@@ -49,9 +49,9 @@ export default function ContributionsTable({
           <tbody id="tableBody">
             {loading ? (
               <tr>
-                <td colSpan={totalColumns} style={{ textAlign: "center", padding: "3rem" }}>
+                <td className="loading-cell" colSpan={totalColumns}>
                   <div className="spinner" />
-                  <div style={{ marginTop: "1rem", color: "#666" }}>Loading contribution data...</div>
+                  <div className="loading-text">Loading contribution data...</div>
                 </td>
               </tr>
             ) : members.length === 0 ? (
@@ -83,7 +83,7 @@ export default function ContributionsTable({
                   </td>
                   {hasActions && (
                     <td data-label="Actions">
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <div className="actions-row">
                         {canManage && (
                           <button className="btn btn-secondary btn-sm" onClick={() => onEditMember(member)} type="button">
                             <i className="fas fa-edit" /> <span className="btn-text">Edit</span>

@@ -125,10 +125,10 @@ export default function RepayOverdraftModal({ open, saving, overdraft, onClose, 
             {error && <div className="form-error">{error}</div>}
 
             <div className="modal-actions">
-              <button className="btn btn-success" disabled={saving} type="submit">
+              <button className="btn btn-success modal-btn" disabled={saving} type="submit">
                 <i className="fas fa-money-bill-wave" /> {saving ? "Saving..." : "Record Payment"}
               </button>
-              <button className="btn btn-secondary" onClick={onClose} type="button">
+              <button className="btn btn-secondary modal-btn" onClick={onClose} type="button">
                 <i className="fas fa-times" /> Cancel
               </button>
             </div>

@@ -119,13 +119,13 @@ export default function ContributionModal({ open, year, members, saving, onClose
           {error && <div className="form-error">{error}</div>}
 
           <div className="modal-actions">
-            <button className="btn btn-primary" disabled={saving} style={{ flex: 1 }} type="submit">
+            <button className="btn btn-primary modal-btn" disabled={saving} type="submit">
               <i className="fas fa-save" /> <span className="btn-text">{saving ? "Saving..." : "Save"}</span>
             </button>
-            <button className="btn btn-danger" disabled={saving || existingAmount <= 0} onClick={handleDelete} style={{ flex: 1 }} type="button">
+            <button className="btn btn-danger modal-btn" disabled={saving || existingAmount <= 0} onClick={handleDelete} type="button">
               <i className="fas fa-trash" /> <span className="btn-text">Delete</span>
             </button>
-            <button className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }} type="button">
+            <button className="btn btn-secondary modal-btn" onClick={onClose} type="button">
               <i className="fas fa-times" /> <span className="btn-text">Cancel</span>
             </button>
           </div>

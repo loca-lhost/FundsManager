@@ -71,24 +71,12 @@ export default function LoginScreen({ defaultEmail = "", loading, errorMessage, 
           </div>
 
           {errorMessage && (
-            <div
-              style={{
-                marginTop: "1rem",
-                padding: "0.75rem 1rem",
-                borderRadius: "10px",
-                border: "1px solid rgba(245, 34, 45, 0.35)",
-                background: "rgba(245, 34, 45, 0.08)",
-                color: "var(--brand-error)",
-                fontSize: "0.9rem",
-              }}
-            >
-              {errorMessage}
-            </div>
+            <div className="notice error login-error">{errorMessage}</div>
           )}
 
-          <div style={{ textAlign: "center", marginTop: "2rem" }}>
+          <div className="login-action">
             <button className="btn btn-primary login-btn" disabled={loading} type="submit">
-              {loading ? "Signing In..." : "Sign In"} <i className="fas fa-arrow-right" style={{ marginLeft: "0.5rem" }} />
+              {loading ? "Signing In..." : "Sign In"} <i className="fas fa-arrow-right login-arrow" />
             </button>
           </div>
         </form>
