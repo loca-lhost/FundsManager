@@ -169,6 +169,9 @@ test.describe("Legacy FundsManager smoke", () => {
         "welfareUser",
         JSON.stringify({ full_name: "Smoke Admin", role: "admin" }),
       );
+      if (typeof setRuntimeUserRole === "function") {
+        setRuntimeUserRole("admin");
+      }
 
       // Stable export hooks so smoke tests can assert output without downloading files.
       window.__xlsxFiles = [];

@@ -104,13 +104,13 @@ function viewMemberProfile(id) {
 
     html += `
         <div class="profile-actions no-print">
-            <button class="btn btn-secondary" onclick="printMemberProfile()">
+            <button class="btn btn-secondary" data-onclick="printMemberProfile()">
                 <i class="fas fa-print"></i> <span class="btn-text">Print</span>
             </button>
             ${isAdmin() ? (currentMember.isArchived ?
-            `<button class="btn btn-success" onclick="closeMemberProfileModal(); restoreMember('${currentMember.id}')"><i class="fas fa-trash-restore"></i> <span class="btn-text">Restore</span></button>` :
-            `<button class="btn btn-danger" onclick="closeMemberProfileModal(); deleteMember('${currentMember.id}')"><i class="fas fa-archive"></i> <span class="btn-text">Archive</span></button>`) : ''}
-            ${isManager() ? `<button class="btn btn-primary" onclick="closeMemberProfileModal(); editMember('${currentMember.id}')">
+            `<button class="btn btn-success" data-onclick="closeMemberProfileModal(); restoreMember('${currentMember.id}')"><i class="fas fa-trash-restore"></i> <span class="btn-text">Restore</span></button>` :
+            `<button class="btn btn-danger" data-onclick="closeMemberProfileModal(); deleteMember('${currentMember.id}')"><i class="fas fa-archive"></i> <span class="btn-text">Archive</span></button>`) : ''}
+            ${isManager() ? `<button class="btn btn-primary" data-onclick="closeMemberProfileModal(); editMember('${currentMember.id}')">
                 <i class="fas fa-edit"></i> <span class="btn-text">Edit</span>
             </button>` : ''}
         </div>
@@ -598,17 +598,17 @@ function renderTable() {
         const isAdm = isAdmin();
 
         row.innerHTML = `
-            <td onclick="viewMemberProfile('${member.id}')" class="cursor-pointer text-brand font-bold">
+            <td data-onclick="viewMemberProfile('${member.id}')" class="cursor-pointer text-brand font-bold">
                 ${escapeHtml(member.name)} 
                 ${member.isArchived ? '<span class="status-badge badge-archived-sm">ARCHIVED</span>' : ''}
-                ${member.isArchived && isAdm ? `<button class="btn btn-success btn-sm" style="margin-left:10px; padding: 2px 8px; font-size: 0.7rem;" onclick="event.stopPropagation(); restoreMember('${member.id}')"><i class="fas fa-trash-restore"></i> Restore</button>` : ''}
-                <i class="fas fa-chevron-down mobile-toggle-icon" onclick="event.stopPropagation(); toggleRow(this)"></i>
+                ${member.isArchived && isAdm ? `<button class="btn btn-success btn-sm" style="margin-left:10px; padding: 2px 8px; font-size: 0.7rem;" data-onclick="event.stopPropagation(); restoreMember('${member.id}')"><i class="fas fa-trash-restore"></i> Restore</button>` : ''}
+                <i class="fas fa-chevron-down mobile-toggle-icon" data-onclick="event.stopPropagation(); toggleRow(this)"></i>
             </td>
             <td data-label="Account Number">${escapeHtml(formatAccountNumber(member.accountNumber))}</td>
             ${months.map(month => `
                 <td data-label="${month}" 
                     class="amount-cell month-cell ${member.contributions[month] > 0 ? 'amount-positive' : 'amount-zero'} ${isMgr ? 'editable-cell' : ''}"
-                    ${isMgr ? `onclick="editContribution('${member.id}', '${month}', ${member.contributions[month]})" title="Click to edit"` : ''}>
+                    ${isMgr ? `data-onclick="editContribution('${member.id}', '${month}', ${member.contributions[month]})" title="Click to edit"` : ''}>
                     ${formatCurrency(member.contributions[month], false)}
                 </td>
             `).join('')}

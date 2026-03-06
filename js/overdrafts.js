@@ -391,7 +391,7 @@ function renderOverdraftsTable() {
                 ` : ''}
             </td>
             <td data-label="Action">
-                ${isOpen && isMgr ? `<button class="btn btn-success btn-sm" onclick="openRepayOverdraftModal('${od.id}')"><i class="fas fa-money-bill-wave"></i> <span class="btn-text">Repay</span></button>` : ''}
+                ${isOpen && isMgr ? `<button class="btn btn-success btn-sm" data-onclick="openRepayOverdraftModal('${od.id}')"><i class="fas fa-money-bill-wave"></i> <span class="btn-text">Repay</span></button>` : ''}
             </td>
         `;
         tbody.appendChild(row);

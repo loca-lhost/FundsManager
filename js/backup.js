@@ -1,6 +1,9 @@
 // --- BACKUP & RESTORE ---
 
-const BACKUP_ENCRYPTION_KEY = 'welfare-backup-key';
+const BACKUP_FORMAT_VERSION = '3.0';
+const BACKUP_KDF_ITERATIONS = 150000;
+const BACKUP_SALT_BYTES = 16;
+const BACKUP_IV_BYTES = 16;
 
 function openBackupModal() {
     const modal = document.getElementById('backupModal');
@@ -22,7 +25,7 @@ function restoreData() {
 
 function buildBackupDataSnapshot() {
     return {
-        version: '2.1',
+        version: BACKUP_FORMAT_VERSION,
         timestamp: new Date().toISOString(),
         year: currentYear,
         members: membersData,
@@ -31,29 +34,134 @@ function buildBackupDataSnapshot() {
     };
 }
 
-function encryptBackupJson(jsonString) {
-    return CryptoJS.AES.encrypt(jsonString, BACKUP_ENCRYPTION_KEY).toString();
+function parseJsonSafe(content) {
+    try {
+        return JSON.parse(content);
+    } catch (e) {
+        return null;
+    }
 }
 
-function parseBackupContent(content) {
-    let parsedData = null;
+function createBackupError(message, code = 'BACKUP_PARSE_ERROR') {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}
 
-    // Attempt encrypted backup first.
-    try {
-        const decrypted = CryptoJS.AES.decrypt(content, BACKUP_ENCRYPTION_KEY);
-        const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
-        if (jsonString) {
-            parsedData = JSON.parse(jsonString);
+function isModernEncryptedBackupPayload(value) {
+    if (!value || typeof value !== 'object') return false;
+    return value.encryption === 'AES-256-CBC-PBKDF2'
+        && typeof value.iterations === 'number'
+        && typeof value.salt === 'string'
+        && typeof value.iv === 'string'
+        && typeof value.ct === 'string';
+}
+
+function promptForBackupPassphrase(mode, requireConfirmation = false) {
+    const intent = mode === 'restore' ? 'restore' : 'create';
+    const passphrase = prompt(`Enter a backup passphrase to ${intent} this file.\nUse at least 8 characters and store it safely.`);
+    if (passphrase == null) return null;
+
+    if (passphrase.length < 8) {
+        alert('Passphrase must be at least 8 characters.');
+        return null;
+    }
+
+    if (!requireConfirmation) return passphrase;
+
+    const confirmPassphrase = prompt('Re-enter the passphrase to confirm.');
+    if (confirmPassphrase == null) return null;
+
+    if (confirmPassphrase !== passphrase) {
+        alert('Passphrases do not match.');
+        return null;
+    }
+
+    return passphrase;
+}
+
+function deriveBackupKey(passphrase, saltHex, iterations) {
+    const salt = CryptoJS.enc.Hex.parse(saltHex);
+    return CryptoJS.PBKDF2(passphrase, salt, {
+        keySize: 256 / 32,
+        iterations: iterations,
+        hasher: CryptoJS.algo.SHA256
+    });
+}
+
+function encryptBackupJson(jsonString, passphrase) {
+    const salt = CryptoJS.lib.WordArray.random(BACKUP_SALT_BYTES);
+    const iv = CryptoJS.lib.WordArray.random(BACKUP_IV_BYTES);
+    const key = CryptoJS.PBKDF2(passphrase, salt, {
+        keySize: 256 / 32,
+        iterations: BACKUP_KDF_ITERATIONS,
+        hasher: CryptoJS.algo.SHA256
+    });
+
+    const encrypted = CryptoJS.AES.encrypt(jsonString, key, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+
+    const payload = {
+        version: BACKUP_FORMAT_VERSION,
+        encryption: 'AES-256-CBC-PBKDF2',
+        iterations: BACKUP_KDF_ITERATIONS,
+        salt: salt.toString(CryptoJS.enc.Hex),
+        iv: iv.toString(CryptoJS.enc.Hex),
+        ct: encrypted.ciphertext.toString(CryptoJS.enc.Base64)
+    };
+
+    return JSON.stringify(payload);
+}
+
+function decryptModernEncryptedBackup(payload, passphrase) {
+    const iterations = Number.isFinite(payload.iterations) ? payload.iterations : BACKUP_KDF_ITERATIONS;
+    const key = deriveBackupKey(passphrase, payload.salt, iterations);
+    const iv = CryptoJS.enc.Hex.parse(payload.iv);
+    const ciphertext = CryptoJS.enc.Base64.parse(payload.ct);
+    const cipherParams = CryptoJS.lib.CipherParams.create({ ciphertext: ciphertext });
+
+    const decrypted = CryptoJS.AES.decrypt(cipherParams, key, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7
+    });
+
+    const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
+    if (!jsonString) {
+        throw createBackupError('Invalid passphrase for this backup file.', 'BACKUP_INVALID_PASSPHRASE');
+    }
+
+    return JSON.parse(jsonString);
+}
+
+function parseBackupContent(content, passphrase = '') {
+    const text = String(content || '').trim();
+    if (!text) {
+        throw createBackupError('Backup file is empty.');
+    }
+
+    const parsedJson = parseJsonSafe(text);
+
+    if (parsedJson && Array.isArray(parsedJson.members)) {
+        return { data: parsedJson, encryption: 'none' };
+    }
+
+    if (parsedJson && isModernEncryptedBackupPayload(parsedJson)) {
+        if (!passphrase) {
+            throw createBackupError('Passphrase required for this backup file.', 'BACKUP_PASSPHRASE_REQUIRED');
         }
-    } catch (e) {
-        // Ignore and try plain JSON next.
+        const decryptedData = decryptModernEncryptedBackup(parsedJson, passphrase);
+        return { data: decryptedData, encryption: 'modern' };
     }
 
-    if (!parsedData) {
-        parsedData = JSON.parse(content);
+    if (parsedJson) {
+        throw createBackupError('Unsupported backup file format.');
     }
 
-    return parsedData;
+    throw createBackupError('Invalid backup file or passphrase.');
 }
 
 function normalizeBackupData(data) {
@@ -225,9 +333,15 @@ async function restoreBackupDataToDatabase(rawData) {
 }
 
 function backupToLocal() {
+    const passphrase = promptForBackupPassphrase('create', true);
+    if (!passphrase) {
+        showToast('Info', 'Backup cancelled', 'info');
+        return;
+    }
+
     const backupData = buildBackupDataSnapshot();
     const jsonString = JSON.stringify(backupData, null, 2);
-    const encrypted = encryptBackupJson(jsonString);
+    const encrypted = encryptBackupJson(jsonString, passphrase);
 
     const blob = new Blob([encrypted], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
@@ -237,8 +351,8 @@ function backupToLocal() {
     a.click();
     URL.revokeObjectURL(url);
 
-    showToast('Success', 'Backup downloaded', 'success');
-    addToAuditLog('Backup', `Local backup created for ${currentYear}`);
+    showToast('Success', 'Encrypted backup downloaded', 'success');
+    addToAuditLog('Backup', `Encrypted local backup created for ${currentYear}`);
 }
 
 async function restoreFromLocal() {
@@ -261,14 +375,32 @@ async function restoreFromLocal() {
         reader.onload = async function (event) {
             try {
                 const content = String(event.target.result || '');
-                const parsedData = parseBackupContent(content);
+                let parsedResult;
 
-                const result = await restoreBackupDataToDatabase(parsedData);
+                try {
+                    parsedResult = parseBackupContent(content);
+                } catch (parseError) {
+                    if (parseError && parseError.code === 'BACKUP_PASSPHRASE_REQUIRED') {
+                        const passphrase = promptForBackupPassphrase('restore', false);
+                        if (!passphrase) {
+                            showToast('Info', 'Restore cancelled', 'info');
+                            return;
+                        }
+                        parsedResult = parseBackupContent(content, passphrase);
+                    } else {
+                        throw parseError;
+                    }
+                }
+
+                const result = await restoreBackupDataToDatabase(parsedResult.data);
                 const summary = `Year ${result.year}: ${result.members} members, ${result.contributions} contributions, ${result.overdrafts} overdrafts restored`;
 
                 showToast('Success', summary, 'success');
                 if (result.skippedOverdrafts > 0) {
                     showToast('Warning', `${result.skippedOverdrafts} overdrafts skipped due to missing member mapping`, 'warning');
+                }
+                if (parsedResult.encryption === 'none') {
+                    showToast('Warning', 'Restored an unencrypted backup file.', 'warning');
                 }
 
                 addToAuditLog('Restore', `Restored from local backup (${result.timestamp})`);

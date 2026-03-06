@@ -222,6 +222,7 @@ async function createNewYear() {
 // --- BOOTSTRAP ---
 // Setup event listeners and initialize
 function bootstrap() {
+    setupLegacyDataHandlers();
     setupDropdownClose();
     setupInactivityListeners();
     setupToolbarInteractions();

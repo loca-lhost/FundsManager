@@ -600,7 +600,7 @@ export default function FundsManagerApp() {
 
       <footer className="app-footer">
         <div className="app-footer-content">
-          <p>Funds Manager - Internal Use</p>
+          <p>Funds Manager</p>
           <p>© {currentYear} KABsTech</p>
         </div>
       </footer>

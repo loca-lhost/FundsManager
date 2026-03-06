@@ -152,18 +152,30 @@ function vibrate(ms = 50) {
 }
 
 // Role Helpers
+let runtimeUserRole = 'viewer';
+
+function normalizeUserRole(role) {
+    const normalized = String(role || '').toLowerCase();
+    if (normalized === 'admin') return 'admin';
+    if (normalized === 'fund_manager') return 'fund_manager';
+    if (normalized === 'manager') return 'manager';
+    return 'viewer';
+}
+
+function setRuntimeUserRole(role) {
+    runtimeUserRole = normalizeUserRole(role);
+}
+
+function clearRuntimeUserRole() {
+    runtimeUserRole = 'viewer';
+}
+
 function isAdmin() {
-    const session = sessionStorage.getItem('welfareUser');
-    if (!session) return false;
-    const user = JSON.parse(session);
-    return String(user.role || '').toLowerCase() === 'admin';
+    return runtimeUserRole === 'admin';
 }
 
 function isManager() {
-    const session = sessionStorage.getItem('welfareUser');
-    if (!session) return false;
-    const user = JSON.parse(session);
-    const role = String(user.role || '').toLowerCase();
+    const role = runtimeUserRole;
     return role === 'admin' || role === 'fund_manager' || role === 'manager';
 }
 

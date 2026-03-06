@@ -50,6 +50,234 @@ function createToastContainer() {
     return container;
 }
 
+const LEGACY_EVENT_ATTRS = {
+    click: 'data-onclick',
+    submit: 'data-onsubmit',
+    change: 'data-onchange',
+    input: 'data-oninput',
+    keyup: 'data-onkeyup',
+    keydown: 'data-onkeydown'
+};
+
+const LEGACY_ALLOWED_FUNCTIONS = new Set([
+    'addUser',
+    'archiveUser',
+    'backupToLocal',
+    'calculateDividends',
+    'changeAuditPage',
+    'changeUserRole',
+    'changeYear',
+    'closeAuditModal',
+    'closeBackupModal',
+    'closeContributionModal',
+    'closeDeleteModal',
+    'closeDeleteUserModal',
+    'closeDividendModal',
+    'closeForgotPasswordModal',
+    'closeIssueOverdraftModal',
+    'closeMemberModal',
+    'closeMemberProfileModal',
+    'closePasswordModal',
+    'closeRepayOverdraftModal',
+    'closeRestoreModal',
+    'closeSettingsModal',
+    'closeUserModal',
+    'confirmArchiveFromModal',
+    'confirmArchiveUser',
+    'confirmDelete',
+    'confirmRestore',
+    'createNewYear',
+    'deleteContribution',
+    'deleteMember',
+    'editContribution',
+    'editMember',
+    'exportAuditLogsXLSX',
+    'exportDividendExcel',
+    'exportToXLSX',
+    'generatePDF',
+    'handleCompleteRecovery',
+    'handleForgotPassword',
+    'handleLogin',
+    'handlePasswordChange',
+    'hideArchiveConfirmation',
+    'importExcel',
+    'issueOverdraft',
+    'logout',
+    'openAddMemberModal',
+    'openAuditModal',
+    'openBackupModal',
+    'openBulkContributionModal',
+    'openContributionModal',
+    'openDividendModal',
+    'openForgotPasswordModal',
+    'openIssueOverdraftModal',
+    'openPasswordModal',
+    'openRepayOverdraftModal',
+    'openSettingsModal',
+    'openUserModal',
+    'printDividendReport',
+    'printMemberProfile',
+    'renderAuditLogs',
+    'repayOverdraft',
+    'resendVerificationEmail',
+    'resetAuditLogs',
+    'restoreFromLocal',
+    'restoreMember',
+    'restoreUser',
+    'saveContribution',
+    'saveDividendToHistory',
+    'saveMember',
+    'saveSettings',
+    'showArchiveConfirmation',
+    'switchTab',
+    'toggleArchivedView',
+    'toggleDropdown',
+    'toggleFab',
+    'togglePasswordVisibility',
+    'toggleProfileDropdown',
+    'toggleRow',
+    'updateTotalDividend',
+    'vibrate',
+    'viewMemberProfile'
+]);
+
+function parseLegacyArgs(rawArgs, element, event) {
+    const args = [];
+    const source = String(rawArgs || '').trim();
+    if (!source) return args;
+
+    let token = '';
+    let inString = false;
+
+    for (let i = 0; i < source.length; i++) {
+        const char = source[i];
+        if (char === "'") {
+            inString = !inString;
+            token += char;
+            continue;
+        }
+
+        if (char === ',' && !inString) {
+            args.push(parseLegacyArgToken(token, element, event));
+            token = '';
+            continue;
+        }
+
+        token += char;
+    }
+
+    if (token.trim()) {
+        args.push(parseLegacyArgToken(token, element, event));
+    }
+
+    return args;
+}
+
+function parseLegacyArgToken(token, element, event) {
+    const value = String(token || '').trim();
+    if (value === 'event') return event;
+    if (value === 'this') return element;
+    if (value === 'this.value') return element && typeof element.value !== 'undefined' ? element.value : '';
+
+    const quoted = value.match(/^'(.*)'$/);
+    if (quoted) return quoted[1];
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && value !== '') return numeric;
+
+    return value;
+}
+
+function runLegacyFunction(name, args) {
+    if (!LEGACY_ALLOWED_FUNCTIONS.has(name)) return;
+    const fn = window[name];
+    if (typeof fn !== 'function') return;
+    fn(...args);
+}
+
+function runLegacyStatement(statement, element, event) {
+    const stmt = String(statement || '').trim();
+    if (!stmt) return;
+
+    if (stmt === 'event.stopPropagation()') {
+        event.stopPropagation();
+        return;
+    }
+
+    if (stmt === 'event.preventDefault()') {
+        event.preventDefault();
+        return;
+    }
+
+    if (/^this\.value\s*=\s*this\.value\.replace\(\/\[\^0-9\]\/g,\s*''\)$/.test(stmt)) {
+        if (element && typeof element.value !== 'undefined') {
+            element.value = String(element.value || '').replace(/[^0-9]/g, '');
+        }
+        return;
+    }
+
+    const classRemoveMatch = stmt.match(/^document\.getElementById\('([^']+)'\)\.classList\.remove\('([^']+)'\)$/);
+    if (classRemoveMatch) {
+        const node = document.getElementById(classRemoveMatch[1]);
+        if (node) node.classList.remove(classRemoveMatch[2]);
+        return;
+    }
+
+    const fnMatch = stmt.match(/^([A-Za-z_$][\w$]*)\((.*)\)$/);
+    if (fnMatch) {
+        const fnName = fnMatch[1];
+        const args = parseLegacyArgs(fnMatch[2], element, event);
+        runLegacyFunction(fnName, args);
+    }
+}
+
+function runLegacyHandlerCode(code, element, event) {
+    const raw = String(code || '').trim();
+    if (!raw) return;
+
+    if (raw === "if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleProfileDropdown();}") {
+        if (event.type === 'keydown' && (event.key === 'Enter' || event.key === ' ')) {
+            event.preventDefault();
+            runLegacyFunction('toggleProfileDropdown', []);
+        }
+        return;
+    }
+
+    raw.split(';').forEach(statement => runLegacyStatement(statement, element, event));
+}
+
+function findLegacyHandlerElement(eventTarget, attrName) {
+    if (!(eventTarget instanceof Element)) return null;
+    return eventTarget.closest(`[${attrName}]`);
+}
+
+function setupLegacyDataHandlers() {
+    if (setupLegacyDataHandlers.initialized) return;
+
+    const bubbleEvents = ['click', 'change', 'input', 'keyup', 'keydown'];
+    bubbleEvents.forEach(eventName => {
+        const attrName = LEGACY_EVENT_ATTRS[eventName];
+        document.addEventListener(eventName, event => {
+            const target = findLegacyHandlerElement(event.target, attrName);
+            if (!target) return;
+            if (eventName === 'click' && target.tagName === 'A') {
+                event.preventDefault();
+            }
+            const code = target.getAttribute(attrName);
+            runLegacyHandlerCode(code, target, event);
+        });
+    });
+
+    document.addEventListener('submit', event => {
+        const form = event.target instanceof Element ? event.target.closest(`form[${LEGACY_EVENT_ATTRS.submit}]`) : null;
+        if (!form) return;
+        const code = form.getAttribute(LEGACY_EVENT_ATTRS.submit);
+        runLegacyHandlerCode(code, form, event);
+    });
+
+    setupLegacyDataHandlers.initialized = true;
+}
+
 function getActiveTab() {
     const activeBtn = document.querySelector('.tab-btn.active');
     if (activeBtn && activeBtn.id.startsWith('tab-')) {

@@ -75,6 +75,7 @@ async function handleAuthenticatedUser(user) {
     }
 
     sessionStorage.setItem('welfareUser', JSON.stringify(userData)); // Keep for sync checks
+    setRuntimeUserRole(userData.role);
 
     document.getElementById('headerUsername').textContent = userData.full_name.split(' ')[0];
     document.getElementById('headerAvatar').textContent = userData.full_name.charAt(0).toUpperCase();
@@ -114,9 +115,9 @@ async function handleAuthenticatedUser(user) {
 
     // Hide specific actions for viewers
     const actionsToHide = [
-        'button[onclick="openDividendModal()"]',
-        'button[onclick="createNewYear()"]',
-        'button[onclick="importExcel()"]'
+        'button[data-onclick="openDividendModal()"]',
+        'button[data-onclick="createNewYear()"]',
+        'button[data-onclick="importExcel()"]'
     ];
 
     actionsToHide.forEach(selector => {
@@ -138,6 +139,7 @@ async function handleAuthenticatedUser(user) {
 }
 
 function showLoginScreen() {
+    clearRuntimeUserRole();
     document.getElementById('loginContainer').style.display = 'flex';
     document.getElementById('initialLoader').style.display = 'none';
     document.getElementById('appContent').style.display = 'none';
@@ -197,6 +199,7 @@ async function logout() {
         await account.deleteSession('current');
     } catch (e) { console.error(e); }
 
+    clearRuntimeUserRole();
     sessionStorage.removeItem('welfareUser');
     checkLogin();
     showToast('Success', 'Logged out', 'success');
@@ -461,7 +464,7 @@ async function renderUsersTable() {
                     `<select class="form-select text-sm" style="padding: 0.2rem 0.5rem; width: auto;" 
                         data-email="${escapeHtml(memberEmail)}"
                         data-name="${escapeHtml(memberName)}"
-                        onchange="changeUserRole(this, '${team.$id}', '${member.$id}')">
+                        data-onchange="changeUserRole(this, '${team.$id}', '${member.$id}')">
                         <option value="viewer" ${currentRole === 'viewer' ? 'selected' : ''}>Viewer</option>
                         <option value="fund_manager" ${currentRole === 'fund_manager' ? 'selected' : ''}>Fund Manager</option>
                         <option value="admin" ${currentRole === 'admin' ? 'selected' : ''}>Admin</option>
@@ -477,8 +480,8 @@ async function renderUsersTable() {
                     <td data-label="Actions" class="text-right">
                         ${!isSelf ?
                         (isArchived ?
-                            `<button class="btn btn-success btn-sm btn-icon" onclick="restoreUser('${member.userId}')" title="Restore User"><i class="fas fa-trash-restore"></i></button>` :
-                            `<button class="btn btn-danger btn-sm btn-icon" onclick="archiveUser('${member.userId}')" title="Archive User"><i class="fas fa-archive"></i></button>`) :
+                            `<button class="btn btn-success btn-sm btn-icon" data-onclick="restoreUser('${member.userId}')" title="Restore User"><i class="fas fa-trash-restore"></i></button>` :
+                            `<button class="btn btn-danger btn-sm btn-icon" data-onclick="archiveUser('${member.userId}')" title="Archive User"><i class="fas fa-archive"></i></button>`) :
                         ''}
                     </td>
                 `;
@@ -491,7 +494,8 @@ async function renderUsersTable() {
         }
     } catch (e) {
         console.error(e);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-error">Error loading users: ${e.message}</td></tr>`;
+        const safeMessage = escapeHtml(e && e.message ? e.message : 'Unknown error');
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-error">Error loading users: ${safeMessage}</td></tr>`;
     }
 }
 
