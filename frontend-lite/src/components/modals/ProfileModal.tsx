@@ -164,8 +164,12 @@ export default function ProfileModal({ open, onClose, onSessionRefresh, onSigned
 
         {loading ? (
           <div className="profile-loading">
-            <div className="spinner" />
-            <p className="text-muted">Loading profile...</p>
+            <div className="brand-loader brand-loader-compact" role="status" aria-live="polite">
+              <img alt="" aria-hidden="true" className="brand-loader-icon" src="/favicon.svg" />
+              <div className="brand-loader-copy">
+                <strong>Loading profile...</strong>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="profile-layout">

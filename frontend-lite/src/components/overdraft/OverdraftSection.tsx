@@ -84,8 +84,12 @@ export default function OverdraftSection({
             {loading ? (
               <tr>
                 <td className="loading-cell" colSpan={canManage ? 10 : 9}>
-                  <div className="spinner" />
-                  <div className="loading-text">Loading overdrafts...</div>
+                  <div className="brand-loader brand-loader-compact" role="status" aria-live="polite">
+                    <img alt="" aria-hidden="true" className="brand-loader-icon" src="/favicon.svg" />
+                    <div className="brand-loader-copy">
+                      <strong>Loading overdrafts...</strong>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : overdrafts.length === 0 ? (

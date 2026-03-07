@@ -125,8 +125,12 @@ export default function ContributionsTable({
 
       {loading ? (
         <div className="loading-cell">
-          <div className="spinner" />
-          <div className="loading-text">Loading contribution data...</div>
+          <div className="brand-loader brand-loader-compact" role="status" aria-live="polite">
+            <img alt="" aria-hidden="true" className="brand-loader-icon" src="/favicon.svg" />
+            <div className="brand-loader-copy">
+              <strong>Loading contribution data...</strong>
+            </div>
+          </div>
         </div>
       ) : members.length === 0 ? (
         <div className="empty-state">

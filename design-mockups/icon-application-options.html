@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bese Saka Icon Application Options</title>
+    <style>
+      :root {
+        --ink: #0f1f39;
+        --muted: #5f7293;
+        --line: rgba(27, 58, 112, 0.15);
+        --panel: rgba(255, 255, 255, 0.78);
+        --panel-strong: rgba(255, 255, 255, 0.9);
+        --brand: #0a2249;
+        --brand-soft: #d9e7ff;
+        --brand-mid: #1f4b93;
+        --surface: #eef4ff;
+        --shadow: 0 28px 60px rgba(10, 28, 64, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "Inter", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(96, 154, 255, 0.24), transparent 26%),
+          radial-gradient(circle at top right, rgba(13, 42, 93, 0.18), transparent 22%),
+          linear-gradient(180deg, #f4f8ff 0%, #e7f0ff 100%);
+      }
+
+      .page {
+        width: min(1500px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: 1.2fr auto;
+        gap: 24px;
+        align-items: end;
+        margin-bottom: 28px;
+      }
+
+      .hero-card {
+        padding: 28px 30px;
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        background: var(--panel);
+        backdrop-filter: blur(18px);
+        box-shadow: var(--shadow);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(10, 34, 73, 0.08);
+        color: var(--brand);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 16px 0 12px;
+        font-size: clamp(34px, 4vw, 58px);
+        line-height: 0.98;
+        letter-spacing: -0.04em;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 62ch;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .brand-tile {
+        width: 118px;
+        height: 118px;
+        border-radius: 28px;
+        background: var(--brand);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 26px 48px rgba(10, 34, 73, 0.22);
+      }
+
+      .brand-tile img {
+        width: 74%;
+        height: 74%;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 22px;
+      }
+
+      .option {
+        border: 1px solid var(--line);
+        border-radius: 30px;
+        overflow: hidden;
+        background: var(--panel-strong);
+        box-shadow: var(--shadow);
+      }
+
+      .option-head {
+        padding: 24px 24px 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .option-kicker {
+        color: var(--brand-mid);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .option h2 {
+        margin: 10px 0 8px;
+        font-size: 28px;
+        letter-spacing: -0.04em;
+      }
+
+      .option-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .scenes {
+        padding: 22px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .scene {
+        border: 1px solid rgba(27, 58, 112, 0.12);
+        border-radius: 24px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(239, 246, 255, 0.82));
+        padding: 16px;
+      }
+
+      .scene-label {
+        margin-bottom: 12px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .phone {
+        height: 300px;
+        border-radius: 28px;
+        border: 10px solid #132543;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        width: 86px;
+        height: 16px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgba(7, 15, 30, 0.66);
+        z-index: 2;
+      }
+
+      .splash-center {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .glyph-blue {
+        width: 104px;
+        height: 104px;
+      }
+
+      .glyph-white {
+        width: 114px;
+        height: 114px;
+      }
+
+      .light-splash {
+        background:
+          radial-gradient(circle at 20% 16%, rgba(96, 154, 255, 0.24), transparent 30%),
+          linear-gradient(180deg, #fbfdff 0%, #eef5ff 100%);
+      }
+
+      .brand-splash {
+        background:
+          radial-gradient(circle at 20% 18%, rgba(97, 161, 255, 0.24), transparent 26%),
+          radial-gradient(circle at 82% 16%, rgba(255, 255, 255, 0.08), transparent 22%),
+          linear-gradient(145deg, #071731 0%, #0a2249 48%, #15366c 100%);
+      }
+
+      .hybrid-splash {
+        background:
+          radial-gradient(circle at 24% 18%, rgba(96, 154, 255, 0.18), transparent 22%),
+          linear-gradient(180deg, rgba(249, 252, 255, 0.98), rgba(234, 242, 255, 0.98));
+      }
+
+      .app-row,
+      .ui-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .mini-card {
+        border-radius: 18px;
+        padding: 14px;
+        border: 1px solid rgba(27, 58, 112, 0.1);
+        background: rgba(255, 255, 255, 0.74);
+      }
+
+      .mini-title {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .icon-tile {
+        width: 74px;
+        height: 74px;
+        margin: 0 auto;
+        border-radius: 20px;
+        display: grid;
+        place-items: center;
+      }
+
+      .icon-tile img {
+        width: 72%;
+        height: 72%;
+      }
+
+      .tile-brand {
+        background: var(--brand);
+      }
+
+      .tile-soft {
+        background: var(--brand-soft);
+      }
+
+      .tile-clear {
+        background:
+          linear-gradient(45deg, rgba(10, 34, 73, 0.08) 25%, transparent 25%, transparent 75%, rgba(10, 34, 73, 0.08) 75%),
+          linear-gradient(45deg, rgba(10, 34, 73, 0.08) 25%, transparent 25%, transparent 75%, rgba(10, 34, 73, 0.08) 75%);
+        background-position: 0 0, 12px 12px;
+        background-size: 24px 24px;
+      }
+
+      .browser-bar {
+        border-radius: 16px;
+        background: #f7fbff;
+        border: 1px solid rgba(27, 58, 112, 0.12);
+        padding: 12px 14px;
+      }
+
+      .tab {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 12px;
+        background: white;
+        border: 1px solid rgba(27, 58, 112, 0.1);
+        padding: 10px 12px;
+      }
+
+      .tab img {
+        width: 18px;
+        height: 18px;
+      }
+
+      .tab span {
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .header-bar {
+        border-radius: 16px;
+        background: linear-gradient(145deg, #081935 0%, #0a2249 48%, #12366a 100%);
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .header-chip {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+      }
+
+      .header-chip img {
+        width: 72%;
+        height: 72%;
+      }
+
+      .header-copy strong {
+        display: block;
+        color: white;
+        font-size: 14px;
+      }
+
+      .header-copy span {
+        color: rgba(225, 236, 255, 0.76);
+        font-size: 12px;
+      }
+
+      .footer-note {
+        margin-top: 22px;
+        padding: 16px 20px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .footer-note strong {
+        color: var(--ink);
+      }
+
+      @media (max-width: 1240px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-card">
+          <div class="eyebrow">Bese Saka Asset Study</div>
+          <h1>Three ways to apply the same icon across splash, UI, and installed app surfaces.</h1>
+          <p>
+            Each direction keeps the Bese Saka mark intact. The difference is where transparency is allowed,
+            where platform-safe backgrounds are introduced, and how the symbol behaves on browser, mobile,
+            and desktop surfaces.
+          </p>
+        </div>
+        <div class="brand-tile">
+          <img src="../icons/favicon-dark.svg" alt="Bese Saka" />
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="option">
+          <div class="option-head">
+            <div class="option-kicker">Action 1</div>
+            <h2>In-App Loading</h2>
+            <p>
+              Keep the install icon platform-safe, but make the app’s internal loading state feel lighter by using
+              the transparent blue glyph on a soft surface.
+            </p>
+          </div>
+          <div class="scenes">
+            <div class="scene">
+              <div class="scene-label">Loading Screen</div>
+              <div class="phone light-splash">
+                <div class="splash-center">
+                  <img class="glyph-blue" src="../icons/favicon.svg" alt="Blue Bese Saka" />
+                </div>
+              </div>
+            </div>
+            <div class="scene">
+              <div class="scene-label">Installed App Icon Stays Safe</div>
+              <div class="app-row">
+                <div class="mini-card">
+                  <p class="mini-title">Desktop</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">Android</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">iOS</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-head">
+            <div class="option-kicker">Action 2</div>
+            <h2>Solid Brand Splash</h2>
+            <p>
+              Use a single brand-blue launch surface with the white Bese Saka mark. This is the most conventional
+              and the least risky for platform launch treatment.
+            </p>
+          </div>
+          <div class="scenes">
+            <div class="scene">
+              <div class="scene-label">Launch Splash</div>
+              <div class="phone brand-splash">
+                <div class="splash-center">
+                  <img class="glyph-white" src="../icons/favicon-dark.svg" alt="White Bese Saka" />
+                </div>
+              </div>
+            </div>
+            <div class="scene">
+              <div class="scene-label">Installed App Icon</div>
+              <div class="app-row">
+                <div class="mini-card">
+                  <p class="mini-title">Desktop</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">Android Maskable</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">Touch Icon</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="option">
+          <div class="option-head">
+            <div class="option-kicker">Action 3</div>
+            <h2>Hybrid Best Practice</h2>
+            <p>
+              Use the transparent blue glyph anywhere the browser/UI can respect transparency, but keep the installed
+              app icon on an opaque brand tile for desktop and mobile launchers.
+            </p>
+          </div>
+          <div class="scenes">
+            <div class="scene">
+              <div class="scene-label">Browser + App UI</div>
+              <div class="ui-row">
+                <div class="mini-card">
+                  <p class="mini-title">Browser Tab</p>
+                  <div class="browser-bar">
+                    <div class="tab">
+                      <img src="../icons/favicon.svg" alt="" />
+                      <span>Funds Manager</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">Header</p>
+                  <div class="header-bar">
+                    <div class="header-chip">
+                      <img src="../icons/favicon-dark.svg" alt="" />
+                    </div>
+                    <div class="header-copy">
+                      <strong>Funds Manager</strong>
+                      <span>Nurturing Collective Wealth</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">Transparent Glyph</p>
+                  <div class="icon-tile tile-clear"><img src="../icons/favicon.svg" alt="" /></div>
+                </div>
+              </div>
+            </div>
+            <div class="scene">
+              <div class="scene-label">Installed App Icon</div>
+              <div class="app-row">
+                <div class="mini-card">
+                  <p class="mini-title">Desktop App</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">Android Launcher</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+                <div class="mini-card">
+                  <p class="mini-title">iOS Touch</p>
+                  <div class="icon-tile tile-brand"><img src="../icons/favicon-dark.svg" alt="" /></div>
+                </div>
+              </div>
+            </div>
+            <div class="scene">
+              <div class="scene-label">Launch Preview</div>
+              <div class="phone hybrid-splash">
+                <div class="splash-center">
+                  <img class="glyph-blue" src="../icons/favicon.svg" alt="Blue Bese Saka" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="footer-note">
+        <strong>Recommendation:</strong> Action 3 is the strongest production setup. It gives you the transparent blue
+        Bese Saka where browsers and in-app UI can actually preserve it, while keeping the installed app icon readable,
+        centered, and stable across desktop shortcuts, Android launchers, and iOS touch surfaces.
+      </section>
+    </main>
+  </body>
+</html>

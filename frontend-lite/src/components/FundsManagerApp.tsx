@@ -492,7 +492,15 @@ export default function FundsManagerApp() {
   if (authLoading) {
     return (
       <div className="fullscreen-center">
-        <div className="spinner" />
+        <div className="brand-loading-screen" role="status" aria-live="polite">
+          <div className="brand-loader">
+            <img alt="" aria-hidden="true" className="brand-loader-icon" src="/favicon.svg" />
+            <div className="brand-loader-copy">
+              <strong>Loading workspace...</strong>
+              <span>Syncing members, contributions, and overdrafts.</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
