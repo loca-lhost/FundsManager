@@ -60,7 +60,7 @@ export default function LoginScreen({ defaultEmail = "", loading, errorMessage, 
         <div className="login-card">
           <div className="login-header">
             <div className="login-logo">
-              <img alt="Bese Saka" className="brand-icon" src="/favicon-light.svg" />
+              <img alt="Bese Saka" className="brand-icon" src="/favicon.svg" />
             </div>
             <div className="login-badge">
               <i className="fas fa-lock" /> Secure Sign In
