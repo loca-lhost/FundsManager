@@ -72,7 +72,7 @@ export default function AppHeader({
         <div className="header-content">
           <div className="logo-section">
             <div className="logo">
-              <img alt="Bese Saka" className="brand-icon" src="/favicon.svg" />
+              <img alt="Bese Saka" className="brand-icon" src="/favicon-dark.svg" />
             </div>
             <div className="header-title">
               <h1>Funds Manager</h1>

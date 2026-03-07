@@ -8,9 +8,10 @@ const __dirname = path.dirname(__filename);
 const root = path.resolve(__dirname, "..");
 const outputs = [path.join(root, "icons"), path.join(root, "frontend-lite", "public")];
 
-const iconSvg = await fs.readFile(path.join(root, "icons", "icon.svg"), "utf8");
+const pwaSvg = await fs.readFile(path.join(root, "icons", "icon.svg"), "utf8");
+const browserSvg = await fs.readFile(path.join(root, "icons", "favicon.svg"), "utf8");
+const whiteSvg = await fs.readFile(path.join(root, "icons", "favicon-dark.svg"), "utf8");
 const monoSvg = await fs.readFile(path.join(root, "icons", "icon-monochrome.svg"), "utf8");
-const darkSvg = await fs.readFile(path.join(root, "icons", "favicon-dark.svg"), "utf8");
 
 function pageHtml({ size, transparent, svg, scale = 0.84, background = "", shadow = false }) {
   return `<!doctype html>
@@ -55,22 +56,6 @@ function pageHtml({ size, transparent, svg, scale = 0.84, background = "", shado
 </html>`;
 }
 
-function maskableBackground(size, soft = false) {
-  const ringInset = soft ? 0.17 : 0.145;
-  const ringOpacity = soft ? 0.16 : 0.12;
-  return `
-    <div class="layer" style="background:
-      radial-gradient(circle at 22% 18%, rgba(104, 181, 255, 0.26), transparent 34%),
-      radial-gradient(circle at 80% 20%, rgba(255, 223, 132, 0.16), transparent 28%),
-      linear-gradient(145deg, #081935 0%, #0a2249 48%, #12366a 100%);
-    "></div>
-    <div class="layer" style="inset:${Math.round(size * ringInset)}px;border-radius:50%;border:${Math.max(
-      2,
-      Math.round(size * 0.012)
-    )}px solid rgba(255,255,255,${ringOpacity});"></div>
-  `;
-}
-
 async function renderPng(page, { content, size, file, transparent = false }) {
   await page.setViewportSize({ width: size, height: size });
   await page.setContent(content);
@@ -83,42 +68,32 @@ const page = await browser.newPage({ deviceScaleFactor: 1 });
 const sizes = [
   { name: "favicon-16x16.png", size: 16, kind: "transparent", scale: 0.86 },
   { name: "favicon-32x32.png", size: 32, kind: "transparent", scale: 0.86 },
-  { name: "icon-192.png", size: 192, kind: "transparent", scale: 0.86 },
-  { name: "icon-512.png", size: 512, kind: "transparent", scale: 0.86 },
-  { name: "icon-1024.png", size: 1024, kind: "transparent", scale: 0.86 },
-  { name: "icon-2048.png", size: 2048, kind: "transparent", scale: 0.86 },
+  { name: "icon-192.png", size: 192, kind: "app", scale: 1 },
+  { name: "icon-512.png", size: 512, kind: "app", scale: 1 },
+  { name: "icon-1024.png", size: 1024, kind: "app", scale: 1 },
+  { name: "icon-2048.png", size: 2048, kind: "app", scale: 1 },
   { name: "icon-192-monochrome.png", size: 192, kind: "mono", scale: 0.88 },
   { name: "icon-512-monochrome.png", size: 512, kind: "mono", scale: 0.88 },
-  { name: "icon-192-maskable.png", size: 192, kind: "maskable", scale: 0.68 },
-  { name: "icon-512-maskable.png", size: 512, kind: "maskable", scale: 0.68 },
-  { name: "icon-1024-maskable.png", size: 1024, kind: "maskable", scale: 0.68 },
-  { name: "icon-2048-maskable.png", size: 2048, kind: "maskable", scale: 0.68 },
-  { name: "apple-touch-icon.png", size: 180, kind: "apple", scale: 0.64 },
+  { name: "icon-192-maskable.png", size: 192, kind: "maskable", scale: 0.7 },
+  { name: "icon-512-maskable.png", size: 512, kind: "maskable", scale: 0.7 },
+  { name: "icon-1024-maskable.png", size: 1024, kind: "maskable", scale: 0.7 },
+  { name: "icon-2048-maskable.png", size: 2048, kind: "maskable", scale: 0.7 },
+  { name: "apple-touch-icon.png", size: 180, kind: "apple", scale: 0.76 },
 ];
 
 for (const outputDir of outputs) {
   for (const item of sizes) {
     let content;
     if (item.kind === "transparent") {
-      content = pageHtml({ size: item.size, transparent: true, svg: iconSvg, scale: item.scale, shadow: false });
+      content = pageHtml({ size: item.size, transparent: true, svg: browserSvg, scale: item.scale, shadow: false });
+    } else if (item.kind === "app") {
+      content = pageHtml({ size: item.size, transparent: false, svg: pwaSvg, scale: item.scale, shadow: false });
     } else if (item.kind === "mono") {
       content = pageHtml({ size: item.size, transparent: true, svg: monoSvg, scale: item.scale, shadow: false });
     } else if (item.kind === "maskable") {
-      content = pageHtml({
-        size: item.size,
-        svg: darkSvg,
-        scale: item.scale,
-        background: maskableBackground(item.size, false),
-        shadow: true,
-      });
+      content = pageHtml({ size: item.size, transparent: false, svg: whiteSvg, scale: item.scale, shadow: false });
     } else {
-      content = pageHtml({
-        size: item.size,
-        svg: darkSvg,
-        scale: item.scale,
-        background: maskableBackground(item.size, true),
-        shadow: true,
-      });
+      content = pageHtml({ size: item.size, transparent: false, svg: whiteSvg, scale: item.scale, shadow: false });
     }
 
     await renderPng(page, {
